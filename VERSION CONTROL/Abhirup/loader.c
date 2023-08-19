@@ -4,9 +4,6 @@ Elf32_Ehdr *ehdr;
 Elf32_Phdr *phdr;
 int fd;
 
-ehdr = (Elf32_Ehdr*)malloc((size_t)52);
-phdr = (Elf32_Phdr*)malloc((size_t)(32*7));
-
 /*
  * release memory and other cleanups
  */
@@ -21,7 +18,10 @@ void load_and_run_elf(char** exe) {
   fd = open(argv[1], O_RDONLY);
   // 1. Load entire binary content into the memory from the ELF file.
 
+  ehdr = (Elf32_Ehdr*)malloc((size_t)52);
   ssize_t NBytes_Read_EHDR = read(fd, ehdr, (size_t)52);
+
+  phdr = (Elf32_Phdr*)malloc((size_t)(ehdr->e_phentsize * ehdr->e_phnum));
   ssize_t NBytes_Read_PHDR = read(fd, phdr, (size_t)(ehdr->e_phentsize * ehdr->e_phnum));
 
   // 2. Iterate through the PHDR table and find the section of PT_LOAD 
