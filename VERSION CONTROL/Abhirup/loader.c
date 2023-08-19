@@ -42,8 +42,18 @@ void load_and_run_elf(char** exe) {
 
   // 3. Allocate memory of the size "p_memsz" using mmap function 
   //    and then copy the segment content
+
+  void* virtual_mem = mmap(NULL, Req_Prog_Header->p_memsz, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_ANONYMOUS | MAP_PRIVATE, 0,0);
+
   // 4. Navigate to the entrypoint address into the segment loaded in the memory in above step
+
+  Req_Prog_Header = (void*)Req_Prog_Header;
+  Req_Prog_Header = Req_Prog_Header + (ehdr->e_entry - phdr->p_offset);
+
   // 5. Typecast the address to that of function pointer matching "_start" method in fib.c.
+
+  int (*_start)() = (int(*)())Req_Prog_Header;
+
   // 6. Call the "_start" method and print the value returned from the "_start"
 
   int result = _start();
