@@ -1,0 +1,22 @@
+CC = gcc
+CFLAGS = -m32 -Werror -Wall -Wextra -fPIC
+LDFLAGS = -L./bin -l_simpleloader
+BINARY = bin
+#invoke make inside the following direcotries in the following order: loader launcher test
+.PHONY: loader launcher fib
+loader:
+	@$(MAKE) -C loader
+launcher:
+	@$(MAKE) -C launcher
+test:
+	@$(MAKE) -C fib
+#move the lib_simpleloader.so and launch binaries inside bin direcotries
+$(BINARY)/launch: launcher/launch.c $(BINARY)/lib_simpleloader.so
+	$(CC) $(CFLAGS) $(LDFLAGS) -0 $(BINARY)/launch launcher/launch.c -L$(BINARY) -lsimpleloader
+$(BINARY)/lib_simpleloader.so : loader/loader.C
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $(BINARY)/lib_simpleloader.so loader/loader.c
+#provide the command for clean up
+clean:
+	@$(MAKE) -C loader clean
+	@$(MAKE) -C launcher clean
+	@$(MAKE) -C test clean
