@@ -16,11 +16,11 @@ void loader_cleanup() {
  * Load and run the ELF executable file
  */
 void load_and_run_elf(char** exe) {
-    fd = open(*exe, O_RDONLY);
+  fd = open(*exe, O_RDONLY);
   // 1. Load entire binary content into the memory from the ELF file.
 
-  ehdr = (Elf32_Ehdr*)malloc((size_t)52);
-  ssize_t NBytes_Read_EHDR = read(fd, ehdr, (size_t)52);
+  ehdr = (Elf32_Ehdr*)malloc(sizeof(Elf32_Ehdr));
+  ssize_t NBytes_Read_EHDR = read(fd, ehdr, sizeof(Elf32_Ehdr));
   if(NBytes_Read_EHDR == -1){
     printf("Error in Reading EHDR");
     exit(1);
@@ -61,12 +61,11 @@ void load_and_run_elf(char** exe) {
 
   // 4. Navigate to the entrypoint address into the segment loaded in the memory in above step
 
-  int address = ((int) virtual_mem + (ehdr->e_entry - phdr[index].p_vaddr));
+  void* address =  virtual_mem + (ehdr->e_entry - phdr[index].p_vaddr);
 
   // 5. Typecast the address to that of function pointer matching "_start" method in fib.c.
 
-  typedef int(*fnc)();
-  fnc _start = (fnc)(int)address;
+  int (*_start)() = (int(*)())(address);
 
   // 6. Call the "_start" method and print the value returned from the "_start"
 
