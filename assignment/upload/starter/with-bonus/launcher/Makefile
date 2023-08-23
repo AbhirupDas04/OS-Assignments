@@ -10,4 +10,4 @@ $(BINARY)/launch: launch.c
 #Provide code for clean up
 
 clean:
-	rm -f lib_simpleloader.so launch
+	rm -f launch
