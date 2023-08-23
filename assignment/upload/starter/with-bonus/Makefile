@@ -15,7 +15,7 @@ test:
 
 #move the lib_simpleloader.so and launch binaries inside bin directories
 
-$(BINARY)/launch:	launcher/launch.c	$(BINARY)/lib_simpleloader.so
+$(BINARY)/launch:	launcher/launch.c
 	mv launcher/launch bin
 $(BINARY)/lib_simpleloader.so:	loader/loader.c
 	mv loader/lib_simpleloader.so bin
