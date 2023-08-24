@@ -28,14 +28,14 @@ void load_and_run_elf(char** exe) {
 
   // 1. Load entire binary content into the memory from the ELF file.
 
-  ehdr = (Elf32_Ehdr*)malloc(sizeof(Elf32_Ehdr));
+  ehdr = (Elf32_Ehdr*)malloc(sizeof(Elf32_Ehdr)); // For allocating memory for ELF Header
   ssize_t NBytes_Read_EHDR = read(fd, ehdr, sizeof(Elf32_Ehdr));
   if(NBytes_Read_EHDR == -1){
     perror("ERROR");
     exit(1);
   }
 
-  phdr = (Elf32_Phdr*)malloc((size_t)(ehdr->e_phentsize * ehdr->e_phnum));
+  phdr = (Elf32_Phdr*)malloc((size_t)(ehdr->e_phentsize * ehdr->e_phnum)); // For allocating memory for Program Header Table
   ssize_t NBytes_Read_PHDR = read(fd, phdr, (size_t)(ehdr->e_phentsize * ehdr->e_phnum));
   if(NBytes_Read_PHDR == -1){
     perror("ERROR");
@@ -54,7 +54,7 @@ void load_and_run_elf(char** exe) {
         Req_Prog_Header = phdr[i];
         index = i;
         flag = 1;
-        break;
+        break; // break when we know that the segment is of type PT_LOAD and when we know that entrypoint lies in this segment
     }
   }
 
