@@ -1,4 +1,8 @@
 #include "shell.h"
+//PATH_MAX wasnt working so here is a quick fix
+#ifndef PATH_MAX
+#define PATH_MAX 4096
+#endif
 //main execution loop
 char user_input[100][80];
 int curr_idx =0;
@@ -20,6 +24,18 @@ int launch(char command[30],char arg[50]){
     else if (!strcmp(command,"echo")){
         printf("%s\n",arg);
         return 1;
+    }
+    //pwd
+    else if (!strcmp(command,"pwd")){
+        char cwd[PATH_MAX];
+        if(getcwd(cwd,sizeof(cwd)) != NULL){
+           printf("%s\n",cwd);  
+           return 1;   
+        }else{
+            red("Error: pwd didnt work as expected!");
+            printf("\n");
+            return 1;
+        }
     }
     else{
         printf("Command: \"%s\" not found.\n",command); 
