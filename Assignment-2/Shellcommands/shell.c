@@ -9,8 +9,10 @@ int curr_idx =0;
 
 void history(){
     int i=0;
-while(strncmp(user_input[i],"\0", strlen(user_input[i]))){
-        printf("%d %s\n", i+1, user_input[i]);
+    while(strncmp(user_input[i],"\0", strlen(user_input[i]))){
+        printf("%d.", i+1);
+        yellow(user_input[i]);
+        printf("\n");
         i++;
     }
 }
@@ -29,13 +31,19 @@ int launch(char command[30],char arg[50]){
     else if (!strcmp(command,"pwd")){
         char cwd[PATH_MAX];
         if(getcwd(cwd,sizeof(cwd)) != NULL){
-           printf("%s\n",cwd);  
+           blue(cwd);
+           printf("\n");
            return 1;   
         }else{
             red("Error: pwd didnt work as expected!");
             printf("\n");
             return 1;
         }
+    }
+    //history
+    else if(!strcmp(command,"history")){
+        history();
+        return 1;
     }
     else{
         printf("Command: \"%s\" not found.\n",command); 
@@ -54,6 +62,8 @@ void shell_loop(){
         fgets(input,100,stdin);
         input[strcspn(input,"\n")] = 0;
         if (!strcmp(input,"")){continue;}
+        strncpy(user_input[curr_idx], input, 80); 
+        curr_idx++;
         //fgets(arg,50,stdin);
         //printf("\n");
         //printf("command:%s\narg:%s\n",command,arg);
@@ -67,8 +77,6 @@ void shell_loop(){
         } else {
             strcpy(arg, "");
         }        
-        strncpy(user_input[curr_idx], input, 80); 
-        curr_idx++;
         status = launch(command,arg);
     }while(status != 0);
     
