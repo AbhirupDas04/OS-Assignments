@@ -1,0 +1,59 @@
+#include "shell.h"
+//main execution loop
+char user_input[100][80];
+int curr_idx =0;
+
+void history(){
+    int i=0;
+while(strncmp(user_input[i],"\0", strlen(user_input[i]))){
+        printf("%d %s\n", i+1, user_input[i]);
+        i++;
+    }
+}
+
+int launch(char command[30],char arg[50]){
+    //exit
+    if(!strcmp(command,"exit")){
+        return 0;
+    }
+    //echo
+    else if (!strcmp(command,"echo")){
+        printf("%s\n",arg);
+        return 1;
+    }
+    else{
+        printf("Command: \"%s\" not found.\n",command); 
+        return 1;
+    }
+    
+}
+void shell_loop(){
+    int status = 1;
+    char input[100];
+    char command[30];
+    char arg[50];
+    do{
+        cyan("assignment2@shell:");
+        magenta("~$ ");
+        fgets(input,100,stdin);
+        input[strcspn(input,"\n")] = 0;
+        if (!strcmp(input,"")){continue;}
+        //fgets(arg,50,stdin);
+        //printf("\n");
+        //printf("command:%s\narg:%s\n",command,arg);
+        //status = strcmp(command,"exit");
+        char *token;
+        token = strtok(input, " ");
+        strcpy(command, token);
+        token = strtok(NULL, "");
+        if(token != NULL) {
+            strcpy(arg, token);
+        } else {
+            strcpy(arg, "");
+        }        
+        strncpy(user_input[curr_idx], input, 80); 
+        curr_idx++;
+        status = launch(command,arg);
+    }while(status != 0);
+    
+}
