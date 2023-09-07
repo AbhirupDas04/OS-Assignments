@@ -52,8 +52,6 @@ int launch(char command[30],char arg[50]){
                 printf("\n");
                 return 1;
             }
-            execl("/usr/bin/echo","/usr/bin/echo", arg, NULL);
-            return 1;
         }
 
         //history
