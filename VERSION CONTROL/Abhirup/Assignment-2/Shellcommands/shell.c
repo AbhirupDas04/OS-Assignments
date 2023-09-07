@@ -71,7 +71,7 @@ int launch(char command[30],char arg[50]){
             execvp("/bin/wc",args);
             return 1;
         }
-        //cd
+        //cd---- just realiased it no work
         else if(!strcmp(command,"cd")){
             //execl("/bin/cd","/bin/cd",arg,NULL);
             //this didnt work read abut it online it inbuilt function no exec file for it
@@ -86,6 +86,11 @@ int launch(char command[30],char arg[50]){
         //sort
         else if(!strcmp(command,"sort")){
             execl("/bin/sort","/bin/sort",arg,NULL);
+            return 1;
+        }
+        //uniq
+        else if(!strcmp(command,"uniq")){
+            execl("/bin/uniq","/bin/uniq",arg,NULL);
             return 1;
         }
         //history
