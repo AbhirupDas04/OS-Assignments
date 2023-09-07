@@ -1,4 +1,5 @@
 #include "color.h"
+
 /*For colors we are goin to use the ANSI escape code
 Black:30
 Red:31
