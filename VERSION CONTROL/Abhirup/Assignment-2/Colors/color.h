@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdio.h>
+
 void black(char* s);
 void red(char*s);
 void yellow(char*s);
