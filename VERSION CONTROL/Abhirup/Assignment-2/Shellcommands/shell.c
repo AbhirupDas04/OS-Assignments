@@ -39,19 +39,17 @@ int launch(char command[30],char arg[50]){
 
         //pwd
         else if (!strcmp(command,"pwd")){
-            char cwd[PATH_MAX];
-            getcwd(cwd,sizeof(cwd));
-
-            if(getcwd(cwd,sizeof(cwd)) != NULL){
-                blue(cwd);
-                printf("\n");
-                return 1;   
+            execl("/bin/pwd","/bin/pwd",NULL);
+            return 1;
+        }
+        //ls
+        else if (!strcmp(command,"ls")){
+            if (strlen(arg) > 0) {
+                execl("/bin/ls","/bin/ls",arg,NULL);
+            } else {
+                execl("/bin/ls","/bin/ls",NULL);
             }
-            else{
-                red("Error: pwd didnt work as expected!");
-                printf("\n");
-                return 1;
-            }
+            return 1;
         }
         //wc
         else if (!strcmp(command,"wc")){
@@ -71,7 +69,34 @@ int launch(char command[30],char arg[50]){
             execvp("/bin/wc",args);
             return 1;
         }
-        //cd---- just realiased it no work
+        
+        //sort
+        else if(!strcmp(command,"sort")){
+            execl("/bin/sort","/bin/sort",arg,NULL);
+            return 1;
+        }
+        //uniq
+        else if(!strcmp(command,"uniq")){
+            execl("/bin/uniq","/bin/uniq",arg,NULL);
+            return 1;
+        }
+        //cat
+        else if(!strcmp(command,"cat")){
+            execl("/bin/cat","/bin/cat",arg,NULL);
+            return 1;
+        }
+        //grep
+        else if(!strcmp(command,"grep")){
+            execl("/bin/grep","/bin/grep",arg,NULL);
+            return 1;
+        }
+        //history
+        else if(!strcmp(command,"history")){
+            history();
+            return 1;
+        }
+        // ------------------------------------Extra-------------------------------------
+        //cd
         else if(!strcmp(command,"cd")){
             //execl("/bin/cd","/bin/cd",arg,NULL);
             //this didnt work read abut it online it inbuilt function no exec file for it
@@ -83,22 +108,6 @@ int launch(char command[30],char arg[50]){
             //now i cant show the complete path onto the prompt so i will just run pwd after each successful cd
             return 1;
         }
-        //sort
-        else if(!strcmp(command,"sort")){
-            execl("/bin/sort","/bin/sort",arg,NULL);
-            return 1;
-        }
-        //uniq
-        else if(!strcmp(command,"uniq")){
-            execl("/bin/uniq","/bin/uniq",arg,NULL);
-            return 1;
-        }
-        //history
-        else if(!strcmp(command,"history")){
-            history();
-            return 1;
-        }
-        //if nothing worked
         else{
             printf("Command: \"%s\" not found.\n",command); 
             return 1;
@@ -121,8 +130,12 @@ void shell_loop(){
     char arg[50];
 
     do{
-        cyan("assignment2@shell:");
-        magenta("~$ ");
+        char cwd[PATH_MAX];
+        getcwd(cwd,sizeof(cwd));
+        magenta("assignment2@shell:");
+        cyan("~");
+        cyan(cwd);
+        white("$");
         fgets(input,100,stdin);
         input[strcspn(input,"\n")] = 0;
 
