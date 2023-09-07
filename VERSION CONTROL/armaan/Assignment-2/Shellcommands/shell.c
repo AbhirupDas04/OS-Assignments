@@ -39,23 +39,16 @@ int launch(char command[30],char arg[50]){
 
         //pwd
         else if (!strcmp(command,"pwd")){
-            /*
-            char cwd[PATH_MAX];
-            getcwd(cwd,sizeof(cwd));
-
-            if(getcwd(cwd,sizeof(cwd)) != NULL){
-                blue(cwd);
-                printf("\n");
-                return 1;*/ 
             execl("/bin/pwd","/bin/pwd",NULL);
             return 1;
+        }
+        //ls
+        else if (!strcmp(command,"ls")){
+            if (strlen(arg) > 0) {
+                execl("/bin/ls","/bin/ls",arg,NULL);
+            } else {
+                execl("/bin/ls","/bin/ls",NULL);
             }
-            else{
-                red("Error: pwd didnt work as expected!");
-                printf("\n");
-                return 1;
-            }
-            execl("/usr/bin/echo","/usr/bin/echo", arg, NULL);
             return 1;
         }
 
