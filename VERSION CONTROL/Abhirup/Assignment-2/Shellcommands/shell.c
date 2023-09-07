@@ -85,9 +85,21 @@ int launch(char command[30],char arg[50]){
         }
         //grep
         else if(!strcmp(command,"grep")){
-            execl("/bin/grep","/bin/grep",arg,NULL);
+            char* args[50];
+            char *token = strtok(arg," ");
+            args[0] = command;
+            int i =1;
+            while(token != NULL){
+                args[i] = token;
+                i++;
+                token = strtok(NULL," ");
+            }
+            args[i] = NULL;
+            //execvp will take in variable arguments unlike excel
+            execvp("/bin/grep",args);
             return 1;
         }
+        
         //history
         else if(!strcmp(command,"history")){
             history();
