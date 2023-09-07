@@ -53,9 +53,10 @@ int launch(char command[30],char arg[50]){
         }
         //wc
         else if (!strcmp(command,"wc")){
-            char *args[50];
+            char* args[50];
             char *token = strtok(arg," ");
-            int i =0;
+            args[0] = command;
+            int i =1;
             while(token != NULL){
                 args[i] = token;
                 i++;
@@ -63,7 +64,6 @@ int launch(char command[30],char arg[50]){
             }
             args[i] = NULL;
             //execvp will take in variable arguments unlike excel
-            printf("\n%s\n",args[1]);
             execvp("/bin/wc",args);
             return 1;
         }
