@@ -135,7 +135,7 @@ void shell_loop(){
         magenta("assignment2@shell:");
         cyan("~");
         cyan(cwd);
-        white("$");
+        white("$ ");
         fgets(input,100,stdin);
         input[strcspn(input,"\n")] = 0;
 
