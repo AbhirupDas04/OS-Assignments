@@ -99,7 +99,7 @@ int launch(char command[30],char arg[50]){
             execvp("/bin/grep",args);
             return 1;
         }
-        
+
         //history
         else if(!strcmp(command,"history")){
             history();
@@ -118,6 +118,23 @@ int launch(char command[30],char arg[50]){
             //now i cant show the complete path onto the prompt so i will just run pwd after each successful cd
             return 1;
         }
+
+        else if(!strncmp(command,"./",2)){
+            char* args[50];
+            char *token = strtok(arg," ");
+            args[0] = command;
+            int i =1;
+            while(token != NULL){
+                args[i] = token;
+                i++;
+                token = strtok(NULL," ");
+            }
+            args[i] = NULL;
+            //execvp will take in variable arguments unlike excel
+            execvp(command,args);
+            return 1;
+        }
+
         else{
             printf("Command: \"%s\" not found.\n",command); 
             return 1;
