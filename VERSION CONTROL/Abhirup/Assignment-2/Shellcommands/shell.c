@@ -16,7 +16,7 @@ void history(){
     int i=0;
     while(strncmp(user_input[i],"\0", strlen(user_input[i]))){
         printf("%d. ", i+1);
-        yellow(user_input[i]);
+        cyan(user_input[i]);
         printf("\n");
         i++;
     }
@@ -53,9 +53,6 @@ int launch(char command[30],char arg[50]){
         }
         //wc
         else if (!strcmp(command,"wc")){
-            //execl("/bin/wc","/bin/wc",arg,NULL);
-            //return 1;
-            //splitting arg into args
             char *args[50];
             char *token = strtok(arg," ");
             int i =0;
@@ -66,6 +63,7 @@ int launch(char command[30],char arg[50]){
             }
             args[i] = NULL;
             //execvp will take in variable arguments unlike excel
+            printf("\n%s\n",args[1]);
             execvp("/bin/wc",args);
             return 1;
         }
@@ -134,7 +132,7 @@ void shell_loop(){
         getcwd(cwd,sizeof(cwd));
         magenta("assignment2@shell:");
         cyan("~");
-        cyan(cwd);
+        yellow(cwd);
         white("$ ");
         fgets(input,100,stdin);
         input[strcspn(input,"\n")] = 0;
