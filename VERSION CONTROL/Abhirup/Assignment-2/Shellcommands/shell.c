@@ -53,13 +53,47 @@ int launch(char command[30],char arg[50]){
                 return 1;
             }
         }
-
+        //wc
+        else if (!strcmp(command,"wc")){
+            //execl("/bin/wc","/bin/wc",arg,NULL);
+            //return 1;
+            //splitting arg into args
+            char *args[50];
+            char *token = strtok(arg," ");
+            int i =0;
+            while(token != NULL){
+                args[i] = token;
+                i++;
+                token = strtok(NULL," ");
+            }
+            args[i] = NULL;
+            //execvp will take in variable arguments unlike excel
+            execvp("/bin/wc",args);
+            return 1;
+        }
+        //cd
+        else if(!strcmp(command,"cd")){
+            //execl("/bin/cd","/bin/cd",arg,NULL);
+            //this didnt work read abut it online it inbuilt function no exec file for it
+            //so here c implemenation for it
+            if (chdir(arg) != 0) {
+                perror("cd");
+            }
+            execl("/bin/pwd","/bin/pwd",NULL);
+            //now i cant show the complete path onto the prompt so i will just run pwd after each successful cd
+            return 1;
+        }
+        //sort
+        else if(!strcmp(command,"sort")){
+            execl("/bin/sort","/bin/sort",arg,NULL);
+            return 1;
+        }
         //history
         else if(!strcmp(command,"history")){
             history();
             return 1;
         }
-
+        //if nothing worked
         else{
             printf("Command: \"%s\" not found.\n",command); 
             return 1;
