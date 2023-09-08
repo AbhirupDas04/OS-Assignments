@@ -1,6 +1,6 @@
 CC = gcc
 
-CFLAGS = -I. -Wall -Wextra -Werror
+CFLAGS = -I. -Wall -Wextra
 DEPS = Shellcommands/shell.h Colors/color.h
 OBJ = Shellcommands/shell.o Colors/color.o main.o
 BIN = bin/main
