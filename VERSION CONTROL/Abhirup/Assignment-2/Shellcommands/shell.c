@@ -107,7 +107,6 @@ int launch(char command[30],char arg[50],int mode){
                     dup2(fd[0],STDIN_FILENO);
                     close(fd[1]);
 
-                    //
                     char arg3[50];
                     char *token1;
                     token1 = strtok(args[j+1], " ");
@@ -134,11 +133,11 @@ int launch(char command[30],char arg[50],int mode){
                     execvp(args[j+1],arg2);
                     exit(0); 
                 }
+
                 /* Parent process */
                 dup2(fd[1],STDOUT_FILENO);
                 close(fd[0]);
 
-                //
                 char arg3[50];
                 char *token1;
                 token1 = strtok(args[j], " ");
@@ -161,7 +160,6 @@ int launch(char command[30],char arg[50],int mode){
                     token1 = strtok(NULL," ");
                 }
                 arg2[i] = NULL;
-                //
 
                 execvp(args[j],arg2);
                 wait(NULL);
@@ -275,7 +273,39 @@ int launch(char command[30],char arg[50],int mode){
         }
 
         else{
-            printf("Command: \"%s\" not found.\n",command); 
+            char* main_str = (char*)malloc(100);
+            char* str1 = "which ";
+            char* str2 = " > /dev/null 2>&1";
+            int curr_index = 0;
+            for(int i = 0; i < (int)strlen(str1); i++){
+                curr_index++;
+                main_str[i] = str1[i];
+            }
+            for(int i = 0; i < (int)strlen(command); i++){
+                main_str[curr_index] = command[i];
+                curr_index++;
+            }
+            for(int i = 0; i < (int)strlen(str2); i++){
+                main_str[curr_index] = str2[i];
+                curr_index++;
+            }
+            if(system(main_str)){
+                printf("Command: \"%s\" not found.\n",command); 
+            }
+            else{
+                char* args[50];
+                char *token = strtok(arg," ");
+                args[0] = command;
+                int i =1;
+                while(token != NULL){
+                    args[i] = token;
+                    i++;
+                    token = strtok(NULL," ");
+                }
+                args[i] = NULL;
+                execvp(command,args);
+            }
+            
             return 1;
         }
     }
