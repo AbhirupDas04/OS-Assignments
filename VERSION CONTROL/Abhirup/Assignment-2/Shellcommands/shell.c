@@ -11,7 +11,18 @@
 //main execution loop
 char user_input[100][80];
 int curr_idx =0;
-
+char exit_sequence[100][1000];
+void Escape_sequence(int signum){
+    int i=0;
+    printf("caught signal %d\n",signum);
+    while(strncmp(exit_sequence[i],"\0", strlen(exit_sequence[i]))){
+        printf("%d. ", i+1);
+        yellow(exit_sequence[i]);
+        printf("\n");
+        i++;
+    }
+    exit(0);
+}
 char* trim(char* string, char* str){
     int entry_status = 1;
     int exit_status = 0;
@@ -181,6 +192,11 @@ int launch(char command[30],char arg[50],int mode){
         //     return 1;
         // }
 
+        if(!strcmp(command,"history")){
+            history();
+            return 1;
+        }
+
         char* main_str = (char*)malloc(100);
         char* str1 = "which ";
         char* str2 = " > /dev/null 2>&1";
@@ -232,7 +248,7 @@ void shell_loop(){
     char input[100];
     char command[30];
     char arg[50];
-
+    signal(SIGINT,Escape_sequence);
     do{
         char cwd[PATH_MAX];
         getcwd(cwd,sizeof(cwd));
@@ -259,11 +275,28 @@ void shell_loop(){
             else {
                 strcpy(arg, "");
             }
-
+            int pid =getpid();
+            clock_t st = clock();
+            time_t start_time;
+            time(&start_time);
             status = launch(command,arg,1);
+            clock_t et = clock();
+            time_t end_time;
+            time(&end_time);
+            double duration = (double)et - st / CLOCKS_PER_SEC;
+            sprintf(exit_sequence[curr_idx-1], "Command \"%s\" executed by \n\tpid: %d\n\tStartTime: %s\n\tEndTime: %s\n\tDuration: %f ms", user_input[curr_idx-1], pid, ctime(&start_time), ctime(&end_time), duration);
         }
         else{
+            int pid =getpid();
+            clock_t st = clock();
+            time_t start_time;
+            time(&start_time);
             status = launch(input,arg,0);
+            clock_t et = clock();
+            time_t end_time;
+            time(&end_time);
+            double duration = (double)et - st / CLOCKS_PER_SEC;
+            sprintf(exit_sequence[curr_idx-1], "Command \"%s\" executed by \n\tpid: %d\n\tStartTime: %s\n\tEndTime: %s\n\tDuration: %f ms", user_input[curr_idx-1], pid, ctime(&start_time), ctime(&end_time), duration);
         }
     }
     
