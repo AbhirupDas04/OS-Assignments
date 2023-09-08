@@ -97,6 +97,10 @@ int launch(char command[30],char arg[50],int mode){
             char str[50];
             char* str2 = (char*)malloc(50*sizeof(char));
             char* token = strtok(command,"|");
+
+            int fd[2];
+            int tmp = 0;
+
             int i = 0;
             while(token != NULL){
                 trim(token,str);
@@ -107,20 +111,23 @@ int launch(char command[30],char arg[50],int mode){
                 i++;
                 token = strtok(NULL,"|");
             }
+
             args[i] = NULL;
 
-            for(int j = 0; j < i-1; j ++){
-                int fd[2];
+            for(int j = 0; j < i; j++){
                 pipe(fd);
 
-                if(fork() == 0) {
-                    /* Child process */
-                    dup2(fd[0],STDIN_FILENO);
-                    close(fd[1]);
+                int pid = fork();
+                if(pid == 0){
+                    dup2(tmp, 0);
+                    if(j != i-1){
+                        dup2(fd[1], 1);
+                    }
+                    close(fd[0]);
 
                     char arg3[50];
                     char *token1;
-                    token1 = strtok(args[j+1], " ");
+                    token1 = strtok(args[j], " ");
                     strcpy(command, token1);
                     token1 = strtok(NULL, "");
                     if(token1 != NULL) {
@@ -132,7 +139,7 @@ int launch(char command[30],char arg[50],int mode){
 
                     char* arg2[50];
                     token1 = strtok(arg3," ");
-                    arg2[0] = args[j+1];
+                    arg2[0] = args[j];
                     int i = 1;
                     while(token1 != NULL){
                         arg2[i] = token1;
@@ -141,43 +148,19 @@ int launch(char command[30],char arg[50],int mode){
                     }
                     arg2[i] = NULL;
 
-                    execvp(args[j+1],arg2);
-                    exit(0); 
+                    execvp(args[j],arg2);
+                    exit(0);
                 }
-
-                /* Parent process */
-                dup2(fd[1],STDOUT_FILENO);
-                close(fd[0]);
-
-                char arg3[50];
-                char *token1;
-                token1 = strtok(args[j], " ");
-                strcpy(command, token1);
-                token1 = strtok(NULL, "");
-                if(token1 != NULL) {
-                    strcpy(arg3, token1);
+                else{
+                    wait(NULL);
+                    close(fd[1]);
+                    tmp = fd[0];
                 }
-                else {
-                    strcpy(arg3, "");
-                }
-
-                char* arg2[50];
-                token1 = strtok(arg3," ");
-                arg2[0] = args[j];
-                int i = 1;
-                while(token1 != NULL){
-                    arg2[i] = token1;
-                    i++;
-                    token1 = strtok(NULL," ");
-                }
-                arg2[i] = NULL;
-
-                execvp(args[j],arg2);
-                wait(NULL);
             }
 
             return 1;
         }
+
         // ------------------------------------Extra-------------------------------------
         // //cd
         // else if(!strcmp(command,"cd")){
