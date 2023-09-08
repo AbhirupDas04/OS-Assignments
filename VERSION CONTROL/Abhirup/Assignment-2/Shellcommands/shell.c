@@ -12,6 +12,56 @@
 char user_input[100][80];
 int curr_idx =0;
 
+char* trim(char* string, char* str){
+    int entry_status = 1;
+    int exit_status = 0;
+    int index = 0;
+    for(int i = 0; i < (int)strlen(string);i++){
+        if(entry_status == 1 && string[i] != ' ' && string[i] != '\t' && string[i] != '\n'){
+            entry_status = 0;
+            exit_status = 1;
+            str[index] = string[i];
+            index++;
+            continue;
+        }
+        if(exit_status == 1){
+            if(string[i] == ' ' || string[i] == '\t' || string[i] == '\n'){
+                int flag = 0;
+                for(int j = i; j < (int)strlen(string); j++){
+                    if(string[j] == ' ' || string[j] == '\t' || string[j] == '\n'){
+                        continue;
+                    }
+                    else{
+                        flag = 1;
+                        break;
+                    }
+                }
+                if(flag == 0){
+                    str[index] = '\0';
+                    return str;
+                }
+                else{
+                    str[index] = string[i];
+                    index++;
+                    continue;
+                }
+            }
+            else if(string[i] == '\0'){
+                str[index] = '\0';
+                return str;
+            }
+            else{
+                str[index] = string[i];
+                index++;
+                continue;
+            }
+        }
+    }
+
+    str[index] = '\0';
+    return str;
+}
+
 void history(){
     int i=0;
     while(strncmp(user_input[i],"\0", strlen(user_input[i]))){
@@ -22,7 +72,7 @@ void history(){
     }
 }
 
-int launch(char command[30],char arg[50]){
+int launch(char command[30],char arg[50],int mode){
     int status = fork();
 
     if(status < 0){
@@ -31,6 +81,95 @@ int launch(char command[30],char arg[50]){
     }
 
     else if(status == 0){
+        if(mode == 0){
+            char* args[50];
+            char str[50];
+            char* str2 = (char*)malloc(50*sizeof(char));
+            char* token = strtok(command,"|");
+            int i = 0;
+            while(token != NULL){
+                trim(token,str);
+                strcpy(str2,str);
+                args[i] = str2;
+                str2 = str;
+                str2 = (char*)malloc(50*sizeof(char));
+                i++;
+                token = strtok(NULL,"|");
+            }
+            args[i] = NULL;
+
+            for(int j = 0; j < i-1; j ++){
+                int fd[2];
+                pipe(fd);
+
+                if(fork() == 0) {
+                    /* Child process */
+                    dup2(fd[0],STDIN_FILENO);
+                    close(fd[1]);
+
+                    //
+                    char arg3[50];
+                    char *token1;
+                    token1 = strtok(args[j+1], " ");
+                    strcpy(command, token1);
+                    token1 = strtok(NULL, "");
+                    if(token1 != NULL) {
+                        strcpy(arg3, token1);
+                    }
+                    else {
+                        strcpy(arg3, "");
+                    }
+
+                    char* arg2[50];
+                    token1 = strtok(arg3," ");
+                    arg2[0] = args[j+1];
+                    int i = 1;
+                    while(token1 != NULL){
+                        arg2[i] = token1;
+                        i++;
+                        token1 = strtok(NULL," ");
+                    }
+                    arg2[i] = NULL;
+
+                    execvp(args[j+1],arg2);
+                    exit(0); 
+                }
+                /* Parent process */
+                dup2(fd[1],STDOUT_FILENO);
+                close(fd[0]);
+
+                //
+                char arg3[50];
+                char *token1;
+                token1 = strtok(args[j], " ");
+                strcpy(command, token1);
+                token1 = strtok(NULL, "");
+                if(token1 != NULL) {
+                    strcpy(arg3, token1);
+                }
+                else {
+                    strcpy(arg3, "");
+                }
+
+                char* arg2[50];
+                token1 = strtok(arg3," ");
+                arg2[0] = args[j];
+                int i = 1;
+                while(token1 != NULL){
+                    arg2[i] = token1;
+                    i++;
+                    token1 = strtok(NULL," ");
+                }
+                arg2[i] = NULL;
+                //
+
+                execvp(args[j],arg2);
+                wait(NULL);
+            }
+
+            return 1;
+        }
+
         //echo
         if (!strcmp(command,"echo")){
             execl("/usr/bin/echo","/usr/bin/echo", arg, NULL);
@@ -171,22 +310,23 @@ void shell_loop(){
         strncpy(user_input[curr_idx], input, 80); 
         curr_idx++;
 
-        //fgets(arg,50,stdin);
-        //printf("\n");
-        //printf("command:%s\narg:%s\n",command,arg);
-        //status = strcmp(command,"exit");
+        if(strstr(input,"|")==NULL){
+            char *token;
+            token = strtok(input, " ");
+            strcpy(command, token);
+            token = strtok(NULL, "");
+            if(token != NULL) {
+                strcpy(arg, token);
+            }
+            else {
+                strcpy(arg, "");
+            }
 
-        char *token;
-        token = strtok(input, " ");
-        strcpy(command, token);
-        token = strtok(NULL, "");
-        if(token != NULL) {
-            strcpy(arg, token);
-        } else {
-            strcpy(arg, "");
+            status = launch(command,arg,1);
         }
-
-        status = launch(command,arg);
+        else{
+            status = launch(input,arg,0);
+        }
     }
     
     while(status != 0);
