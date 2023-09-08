@@ -167,29 +167,40 @@ int launch(char command[30],char arg[50],int mode){
 
             return 1;
         }
+        // ------------------------------------Extra-------------------------------------
+        // //cd
+        // else if(!strcmp(command,"cd")){
+        //     //execl("/bin/cd","/bin/cd",arg,NULL);
+        //     //this didnt work read abut it online it inbuilt function no exec file for it
+        //     //so here c implemenation for it
+        //     if (chdir(arg) != 0) {
+        //         perror("cd");
+        //     }
+        //     execl("/bin/pwd","/bin/pwd",NULL);
+        //     //now i cant show the complete path onto the prompt so i will just run pwd after each successful cd
+        //     return 1;
+        // }
 
-        //echo
-        if (!strcmp(command,"echo")){
-            execl("/usr/bin/echo","/usr/bin/echo", arg, NULL);
-            return 1;
+        char* main_str = (char*)malloc(100);
+        char* str1 = "which ";
+        char* str2 = " > /dev/null 2>&1";
+        int curr_index = 0;
+        for(int i = 0; i < (int)strlen(str1); i++){
+            curr_index++;
+            main_str[i] = str1[i];
         }
-
-        //pwd
-        else if (!strcmp(command,"pwd")){
-            execl("/bin/pwd","/bin/pwd",NULL);
-            return 1;
+        for(int i = 0; i < (int)strlen(command); i++){
+            main_str[curr_index] = command[i];
+            curr_index++;
         }
-        //ls
-        else if (!strcmp(command,"ls")){
-            if (strlen(arg) > 0) {
-                execl("/bin/ls","/bin/ls",arg,NULL);
-            } else {
-                execl("/bin/ls","/bin/ls",NULL);
-            }
-            return 1;
+        for(int i = 0; i < (int)strlen(str2); i++){
+            main_str[curr_index] = str2[i];
+            curr_index++;
         }
-        //wc
-        else if (!strcmp(command,"wc")){
+        if(system(main_str)){
+            printf("Command: \"%s\" not found.\n",command); 
+        }
+        else{
             char* args[50];
             char *token = strtok(arg," ");
             args[0] = command;
@@ -200,115 +211,12 @@ int launch(char command[30],char arg[50],int mode){
                 token = strtok(NULL," ");
             }
             args[i] = NULL;
-            //execvp will take in variable arguments unlike excel
-            execvp("/bin/wc",args);
-            return 1;
+            execvp(command,args);
         }
         
-        //sort
-        else if(!strcmp(command,"sort")){
-            execl("/bin/sort","/bin/sort",arg,NULL);
-            return 1;
-        }
-        //uniq
-        else if(!strcmp(command,"uniq")){
-            execl("/bin/uniq","/bin/uniq",arg,NULL);
-            return 1;
-        }
-        //cat
-        else if(!strcmp(command,"cat")){
-            execl("/bin/cat","/bin/cat",arg,NULL);
-            return 1;
-        }
-        //grep
-        else if(!strcmp(command,"grep")){
-            char* args[50];
-            char *token = strtok(arg," ");
-            args[0] = command;
-            int i =1;
-            while(token != NULL){
-                args[i] = token;
-                i++;
-                token = strtok(NULL," ");
-            }
-            args[i] = NULL;
-            //execvp will take in variable arguments unlike excel
-            execvp("/bin/grep",args);
-            return 1;
-        }
-
-        //history
-        else if(!strcmp(command,"history")){
-            history();
-            return 1;
-        }
-        // ------------------------------------Extra-------------------------------------
-        //cd
-        else if(!strcmp(command,"cd")){
-            //execl("/bin/cd","/bin/cd",arg,NULL);
-            //this didnt work read abut it online it inbuilt function no exec file for it
-            //so here c implemenation for it
-            if (chdir(arg) != 0) {
-                perror("cd");
-            }
-            execl("/bin/pwd","/bin/pwd",NULL);
-            //now i cant show the complete path onto the prompt so i will just run pwd after each successful cd
-            return 1;
-        }
-
-        else if(!strncmp(command,"./",2)){
-            char* args[50];
-            char *token = strtok(arg," ");
-            args[0] = command;
-            int i =1;
-            while(token != NULL){
-                args[i] = token;
-                i++;
-                token = strtok(NULL," ");
-            }
-            args[i] = NULL;
-            //execvp will take in variable arguments unlike excel
-            execvp(command,args);
-            return 1;
-        }
-
-        else{
-            char* main_str = (char*)malloc(100);
-            char* str1 = "which ";
-            char* str2 = " > /dev/null 2>&1";
-            int curr_index = 0;
-            for(int i = 0; i < (int)strlen(str1); i++){
-                curr_index++;
-                main_str[i] = str1[i];
-            }
-            for(int i = 0; i < (int)strlen(command); i++){
-                main_str[curr_index] = command[i];
-                curr_index++;
-            }
-            for(int i = 0; i < (int)strlen(str2); i++){
-                main_str[curr_index] = str2[i];
-                curr_index++;
-            }
-            if(system(main_str)){
-                printf("Command: \"%s\" not found.\n",command); 
-            }
-            else{
-                char* args[50];
-                char *token = strtok(arg," ");
-                args[0] = command;
-                int i =1;
-                while(token != NULL){
-                    args[i] = token;
-                    i++;
-                    token = strtok(NULL," ");
-                }
-                args[i] = NULL;
-                execvp(command,args);
-            }
-            
-            return 1;
-        }
+        return 1;
     }
+
     else{
         int ret;
         int pid = wait(&ret);
