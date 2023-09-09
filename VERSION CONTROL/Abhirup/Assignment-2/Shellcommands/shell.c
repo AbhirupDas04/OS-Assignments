@@ -273,6 +273,7 @@ void shell_loop(){
     char arg[50];
     signal(SIGINT,Escape_sequence);
     signal(SIGCHLD,Escape_sequence);
+
     do{
         char cwd[PATH_MAX];
         getcwd(cwd,sizeof(cwd));
@@ -286,7 +287,6 @@ void shell_loop(){
         if (!strcmp(input,"")){continue;}
 
         strncpy(user_input[curr_idx], input, 80); 
-        curr_idx++;
 
         char test_input[100];
         int flag_bg_detect = 0;
@@ -382,6 +382,7 @@ void shell_loop(){
             }
 
             else{
+                curr_idx++;
                 struct timeval start, end;
                 time_t t,u;
                 struct tm* info1;
@@ -410,6 +411,7 @@ void shell_loop(){
             }
         }
         else{
+            curr_idx++;
             struct timeval start, end;
             time_t t,u;
             struct tm* info1;
