@@ -197,19 +197,7 @@ int launch(char command[30],char arg[50],int mode){
 
             exit(0);
         }
-        // ------------------------------------Extra-------------------------------------
-        if(!strcmp(command,"mkdir")){
-            int status = mkdir(arg,0777);
-            if(!status){
-                green("Directory successfully created");
-                printf("\n");
-            }else{
-                red("Failed to create directory");
-                printf("\n");
-            }
-            exit(0);
-        }
-
+        
         if(!strcmp(command,"history")){
             history();
             exit(0);
