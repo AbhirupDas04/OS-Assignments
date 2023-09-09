@@ -20,10 +20,8 @@ void Escape_sequence(int signum){
     }
 
     if(signum == SIGCHLD){
-        if(signum == SIGCHLD){
-            int* cstatus = 0;
-            waitpid(-1,cstatus,WNOHANG);
-        }
+        int* cstatus = 0;
+        waitpid(-1,cstatus,WNOHANG);
     }
 }
 
