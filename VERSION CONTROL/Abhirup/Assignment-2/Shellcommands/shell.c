@@ -17,7 +17,7 @@ void Escape_sequence(int signum){
             }
             i++;
         }
-        exit(0);
+        _exit(0);
     }
 
     if(signum == SIGCHLD){
