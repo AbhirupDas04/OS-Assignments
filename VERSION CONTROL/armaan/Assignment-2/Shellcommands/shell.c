@@ -1,28 +1,35 @@
 #include "shell.h"
 
-//PATH_MAX wasnt working so here is a quick fix
-
-// #ifndef PATH_MAX
-// #define PATH_MAX 4096
-// #endif
-
 #define PATH_MAX 4096
 
-//main execution loop
 char user_input[100][80];
 int curr_idx =0;
-char exit_sequence[100][1000];
+char exit_sequence[100][2000];
+
 void Escape_sequence(int signum){
-    int i=0;
-    printf("caught signal %d\n",signum);
-    while(strncmp(exit_sequence[i],"\0", strlen(exit_sequence[i]))){
-        printf("%d. ", i+1);
-        yellow(exit_sequence[i]);
-        printf("\n");
-        i++;
+    if(signum == SIGINT){
+        int i=0;
+        char buffer[2000];
+        int len;
+        len = snprintf(buffer, sizeof(buffer), "caught signal %d\n", signum);
+        write(1, buffer, len);
+        // char arr[];
+        while(strncmp(exit_sequence[i],"\0", strlen(exit_sequence[i]))){
+            len = snprintf(buffer, sizeof(buffer), "%d. ", i+1);
+            write(1, buffer, len);
+            len = snprintf(buffer, sizeof(buffer), "%s", exit_sequence[i]);
+            write(1, buffer, len);
+            i++;
+        }
+        exit(0);
     }
-    exit(0);
+
+    if(signum == SIGCHLD){
+        int* cstatus = 0;
+        waitpid(-1,cstatus,WNOHANG);
+    }
 }
+
 char* trim(char* string, char* str){
     int entry_status = 1;
     int exit_status = 0;
@@ -73,6 +80,42 @@ char* trim(char* string, char* str){
     return str;
 }
 
+int lastBack(char* string){
+  int len = (int)strlen(string);
+  for(int i = len-1; i >=0; i--){
+    if(string[i] == ' ' || string[i] == '\t' || string[i] == '\n'){
+      continue;
+    }
+    else if(string[i] == '&'){
+      return 1;
+    }
+    else{
+      return 0;
+    }
+  }
+  return 0;
+}
+
+void remAmp(char* old_str, char* new_str){
+  int pos;
+
+  int len = (int)strlen(old_str);
+  for(int i = len-1; i >=0; i--){
+    if(old_str[i] == '&'){
+      pos = i;
+      break;
+    }
+  }
+
+  int i;
+
+  for(i = 0; i < pos; i++){
+    new_str[i] = old_str[i];
+  }
+
+  new_str[i] = '\0';
+}
+
 void history(){
     int i=0;
     while(strncmp(user_input[i],"\0", strlen(user_input[i]))){
@@ -92,11 +135,15 @@ int launch(char command[30],char arg[50],int mode){
     }
 
     else if(status == 0){
-        if(mode == 0){
+        if(mode == 0 || mode == 3){
             char* args[50];
             char str[50];
             char* str2 = (char*)malloc(50*sizeof(char));
             char* token = strtok(command,"|");
+
+            int fd[2];
+            int tmp = 0;
+
             int i = 0;
             while(token != NULL){
                 trim(token,str);
@@ -109,18 +156,20 @@ int launch(char command[30],char arg[50],int mode){
             }
             args[i] = NULL;
 
-            for(int j = 0; j < i-1; j ++){
-                int fd[2];
+            for(int j = 0; j < i; j++){
                 pipe(fd);
 
-                if(fork() == 0) {
-                    /* Child process */
-                    dup2(fd[0],STDIN_FILENO);
-                    close(fd[1]);
+                int pid = fork();
+                if(pid == 0){
+                    dup2(tmp, 0);
+                    if(j != i-1){
+                        dup2(fd[1], 1);
+                    }
+                    close(fd[0]);
 
                     char arg3[50];
                     char *token1;
-                    token1 = strtok(args[j+1], " ");
+                    token1 = strtok(args[j], " ");
                     strcpy(command, token1);
                     token1 = strtok(NULL, "");
                     if(token1 != NULL) {
@@ -132,7 +181,7 @@ int launch(char command[30],char arg[50],int mode){
 
                     char* arg2[50];
                     token1 = strtok(arg3," ");
-                    arg2[0] = args[j+1];
+                    arg2[0] = args[j];
                     int i = 1;
                     while(token1 != NULL){
                         arg2[i] = token1;
@@ -141,42 +190,16 @@ int launch(char command[30],char arg[50],int mode){
                     }
                     arg2[i] = NULL;
 
-                    execvp(args[j+1],arg2);
-                    exit(0); 
+                    execvp(args[j],arg2);
                 }
-
-                /* Parent process */
-                dup2(fd[1],STDOUT_FILENO);
-                close(fd[0]);
-
-                char arg3[50];
-                char *token1;
-                token1 = strtok(args[j], " ");
-                strcpy(command, token1);
-                token1 = strtok(NULL, "");
-                if(token1 != NULL) {
-                    strcpy(arg3, token1);
+                else{
+                    wait(NULL);
+                    close(fd[1]);
+                    tmp = fd[0];
                 }
-                else {
-                    strcpy(arg3, "");
-                }
-
-                char* arg2[50];
-                token1 = strtok(arg3," ");
-                arg2[0] = args[j];
-                int i = 1;
-                while(token1 != NULL){
-                    arg2[i] = token1;
-                    i++;
-                    token1 = strtok(NULL," ");
-                }
-                arg2[i] = NULL;
-
-                execvp(args[j],arg2);
-                wait(NULL);
             }
 
-            return 1;
+            exit(0);
         }
         // ------------------------------------Extra-------------------------------------
         // //cd
@@ -192,9 +215,14 @@ int launch(char command[30],char arg[50],int mode){
         //     return 1;
         // }
 
+        if(!strcmp(command,"history")){
+            history();
+            exit(0);
+        }
+
         char* main_str = (char*)malloc(100);
         char* str1 = "which ";
-        char* str2 = " > /dev/null 2>&1";
+        char* str2 = " > /dev/null 2>.1";
         int curr_index = 0;
         for(int i = 0; i < (int)strlen(str1); i++){
             curr_index++;
@@ -225,16 +253,21 @@ int launch(char command[30],char arg[50],int mode){
             execvp(command,args);
         }
         
-        return 1;
+        exit(0);
     }
 
     else{
         int ret;
-        int pid = wait(&ret);
-        if(!WIFEXITED(ret)) {
-            printf("Abnormal termination of %d\n",pid);
+
+        if(mode != 2 && mode != 3){
+            status = wait(&ret);
+
+            if(!WIFEXITED(ret)) {
+                printf("Abnormal termination of %d\n",status);
+            }
         }
-        return 1;
+
+        return status;
     }
 }
 
@@ -244,6 +277,8 @@ void shell_loop(){
     char command[30];
     char arg[50];
     signal(SIGINT,Escape_sequence);
+    signal(SIGCHLD,Escape_sequence);
+
     do{
         char cwd[PATH_MAX];
         getcwd(cwd,sizeof(cwd));
@@ -257,7 +292,14 @@ void shell_loop(){
         if (!strcmp(input,"")){continue;}
 
         strncpy(user_input[curr_idx], input, 80); 
-        curr_idx++;
+
+        char test_input[100];
+        int flag_bg_detect = 0;
+        if(lastBack(input) == 1){
+            remAmp(input,test_input);
+            flag_bg_detect = 1;
+            strcpy(input,test_input);
+        }
 
         if(strstr(input,"|")==NULL){
             char *token;
@@ -270,31 +312,138 @@ void shell_loop(){
             else {
                 strcpy(arg, "");
             }
-            int pid =getpid();
-            clock_t st = clock();
-            time_t start_time;
-            time(&start_time);
-            status = launch(command,arg,1);
-            clock_t et = clock();
-            time_t end_time;
-            time(&end_time);
-            double duration = (double)et - st / CLOCKS_PER_SEC;
-            sprintf(exit_sequence[curr_idx-1], "Command \"%s\" executed by \n\tpid: %d\n\tStartTime: %s\n\tEndTime: %s\n\tDuration: %f ms", user_input[curr_idx-1], pid, ctime(&start_time), ctime(&end_time), duration);
+
+            if(!strcmp(command,"run")){
+                FILE *fptr;
+                fptr = fopen(arg, "r");
+
+                while(fgets(input, 100, fptr)) {
+                    input[strcspn(input,"\n")] = 0;
+
+                    if (!strcmp(input,"") || !strcmp(input,"\n")){continue;}
+
+                    strncpy(user_input[curr_idx], input, 80); 
+                    curr_idx++;
+
+                    if(strstr(input,"|")==NULL){
+                        char *token;
+                        token = strtok(input, " ");
+                        strcpy(command, token);
+                        token = strtok(NULL, "");
+                        if(token != NULL) {
+                            strcpy(arg, token);
+                        }
+                        else {
+                            strcpy(arg, "");
+                        }
+
+                        struct timeval start, end;
+                        time_t t,u;
+                        struct tm* info1;
+                        struct tm* info2;
+                        char buffer[64], buffer2[64];
+
+                        gettimeofday(&start, NULL);
+                        t = start.tv_sec;
+                        info1 = localtime(&t);
+                        strftime(buffer, sizeof buffer, "%A, %B %d - %H:%M:%S\n", info1);
+
+                        status = launch(command,arg,1);
+                        
+                        gettimeofday(&end, NULL);
+                        u = end.tv_sec;
+                        info2 = localtime(&u);
+                        strftime(buffer2, sizeof buffer2, "%A, %B %d - %H:%M:%S\n", info2);
+
+                        double duration = ((end.tv_sec * 1000000 + end.tv_usec) - (start.tv_sec * 1000000 + start.tv_usec))/1000000.0;
+                        sprintf(exit_sequence[curr_idx-1], "Command \"%s\" executed by \n\tpid: %d\n\n\tStartTime: %s\n\tEndTime: %s\n\tDuration: %lf s\n", user_input[curr_idx-1], status, buffer, buffer2, duration);
+                    }
+
+                    else{
+                        struct timeval start, end;
+                        time_t t,u;
+                        struct tm* info1;
+                        struct tm* info2;
+                        char buffer[64], buffer2[64];
+
+                        gettimeofday(&start, NULL);
+                        t = start.tv_sec;
+                        info1 = localtime(&t);
+                        strftime(buffer, sizeof buffer, "%A, %B %d - %H:%M:%S\n", info1);
+
+                        status = launch(input,arg,0);
+                        
+                        gettimeofday(&end, NULL);
+                        u = end.tv_sec;
+                        info2 = localtime(&u);
+                        strftime(buffer2, sizeof buffer2, "%A, %B %d - %H:%M:%S\n", info2);
+
+                        double duration = ((end.tv_sec * 1000000 + end.tv_usec) - (start.tv_sec * 1000000 + start.tv_usec))/1000000.0;
+                        sprintf(exit_sequence[curr_idx-1], "Command \"%s\" executed by \n\tpid: %d\n\n\tStartTime: %s\n\tEndTime: %s\n\tDuration: %lf s\n", user_input[curr_idx-1], status, buffer, buffer2, duration);
+                    }
+                }
+            
+                fclose(fptr);
+            }
+
+            else{
+                curr_idx++;
+                struct timeval start, end;
+                time_t t,u;
+                struct tm* info1;
+                struct tm* info2;
+                char buffer[64], buffer2[64];
+
+                gettimeofday(&start, NULL);
+                t = start.tv_sec;
+                info1 = localtime(&t);
+                strftime(buffer, sizeof buffer, "%A, %B %d - %H:%M:%S\n", info1);
+
+                if(flag_bg_detect == 1){
+                    status = launch(command,arg,2);
+                }
+                else{
+                    status = launch(command,arg,1);
+                }
+
+                gettimeofday(&end, NULL);
+                u = end.tv_sec;
+                info2 = localtime(&u);
+                strftime(buffer2, sizeof buffer2, "%A, %B %d - %H:%M:%S\n", info2);
+
+                double duration = ((end.tv_sec * 1000000 + end.tv_usec) - (start.tv_sec * 1000000 + start.tv_usec))/1000000.0;
+                sprintf(exit_sequence[curr_idx-1], "Command \"%s\" executed by \n\tpid: %d\n\n\tStartTime: %s\n\tEndTime: %s\n\tDuration: %lf s\n", user_input[curr_idx-1], status, buffer, buffer2, duration);
+            }
         }
         else{
-            int pid =getpid();
-            clock_t st = clock();
-            time_t start_time;
-            time(&start_time);
-            status = launch(input,arg,0);
-            clock_t et = clock();
-            time_t end_time;
-            time(&end_time);
-            double duration = (double)et - st / CLOCKS_PER_SEC;
-            sprintf(exit_sequence[curr_idx-1], "Command \"%s\" executed by \n\tpid: %d\n\tStartTime: %s\n\tEndTime: %s\n\tDuration: %f ms", user_input[curr_idx-1], pid, ctime(&start_time), ctime(&end_time), duration);
+            curr_idx++;
+            struct timeval start, end;
+            time_t t,u;
+            struct tm* info1;
+            struct tm* info2;
+            char buffer[64], buffer2[64];
+
+            gettimeofday(&start, NULL);
+            t = start.tv_sec;
+            info1 = localtime(&t);
+            strftime(buffer, sizeof buffer, "%A, %B %d - %H:%M:%S\n", info1);
+
+            if(flag_bg_detect == 1){
+                status = launch(input,arg,3);
+            }
+            else{
+                status = launch(input,arg,0);
+            }
+            
+            gettimeofday(&end, NULL);
+            u = end.tv_sec;
+            info2 = localtime(&u);
+            strftime(buffer2, sizeof buffer2, "%A, %B %d - %H:%M:%S\n", info2);
+
+            double duration = ((end.tv_sec * 1000000 + end.tv_usec) - (start.tv_sec * 1000000 + start.tv_usec))/1000000.0;
+            sprintf(exit_sequence[curr_idx-1], "Command \"%s\" executed by \n\tpid: %d\n\n\tStartTime: %s\n\tEndTime: %s\n\tDuration: %lf s\n", user_input[curr_idx-1], status, buffer, buffer2, duration);
         }
     }
     
     while(status != 0);
-    
 }
