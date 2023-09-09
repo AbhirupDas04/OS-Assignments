@@ -197,7 +197,7 @@ int launch(char command[30],char arg[50],int mode){
 
             exit(0);
         }
-        
+
         if(!strcmp(command,"history")){
             history();
             exit(0);
@@ -259,19 +259,34 @@ void shell_loop(){
     char input[100];
     char command[30];
     char arg[50];
-    signal(SIGINT,Escape_sequence);
-    signal(SIGCHLD,Escape_sequence);
+
+    if(signal(SIGINT,Escape_sequence) == SIG_ERR){
+        perror("ERROR");
+        exit(1);
+    }
+
+    if(signal(SIGCHLD,Escape_sequence) == SIG_ERR){
+        perror("ERROR");
+        exit(1);
+    }
 
     do{
         char cwd[PATH_MAX];
-        getcwd(cwd,sizeof(cwd));
+        if(getcwd(cwd,sizeof(cwd)) == NULL){
+            perror("ERROR");
+            exit(1);
+        }
         magenta("assignment2@shell:");
         cyan("~");
         yellow(cwd);
         white("$ ");
-        fgets(input,100,stdin);
-        input[strcspn(input,"\n")] = 0;
 
+        if(fgets(input,100,stdin) == NULL){
+            printf("fgets has failed or there is nothing to input anymore!");
+            exit(1);
+        }
+
+        input[strcspn(input,"\n")] = 0;
         if (!strcmp(input,"")){continue;}
 
         strncpy(user_input[curr_idx], input, 80); 
@@ -298,7 +313,12 @@ void shell_loop(){
 
             if(!strcmp(command,"run")){
                 FILE *fptr;
+
                 fptr = fopen(arg, "r");
+                if(fptr == NULL){
+                    perror("ERROR");
+                    continue;
+                }
 
                 while(fgets(input, 100, fptr)) {
                     input[strcspn(input,"\n")] = 0;
@@ -364,6 +384,7 @@ void shell_loop(){
                         double duration = ((end.tv_sec * 1000000 + end.tv_usec) - (start.tv_sec * 1000000 + start.tv_usec))/1000000.0;
                         sprintf(exit_sequence[curr_idx-1], "%d) Command \"%s\" executed by \n\tpid: %d\n\n\tStartTime: %s\n\tEndTime: %s\n\tDuration: %lf s\n\n", curr_idx, user_input[curr_idx-1], status, buffer, buffer2, duration);
                     }
+                    
                 }
             
                 fclose(fptr);
