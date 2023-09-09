@@ -5,18 +5,26 @@
 char user_input[100][80];
 int curr_idx =0;
 char exit_sequence[100][2000];
-int spc = 0;
 
 void Escape_sequence(int signum){
-    int i=0;
-    printf("caught signal %d\n",signum);
-    while(strncmp(exit_sequence[i],"\0", strlen(exit_sequence[i]))){
-        printf("%d. ", i+1);
-        yellow(exit_sequence[i]);
-        printf("\n");
-        i++;
+    if(signum == SIGINT){
+        int i=0;
+        printf("caught signal %d\n",signum);
+        while(strncmp(exit_sequence[i],"\0", strlen(exit_sequence[i]))){
+            printf("%d. ", i+1);
+            yellow(exit_sequence[i]);
+            printf("\n");
+            i++;
+        }
+        exit(0);
     }
-    exit(0);
+
+    if(signum == SIGCHLD){
+        if(signum == SIGCHLD){
+            int* cstatus = 0;
+            waitpid(-1,cstatus,WNOHANG);
+        }
+    }
 }
 
 char* trim(char* string, char* str){
@@ -69,6 +77,42 @@ char* trim(char* string, char* str){
     return str;
 }
 
+int lastBack(char* string){
+  int len = (int)strlen(string);
+  for(int i = len-1; i >=0; i--){
+    if(string[i] == ' ' || string[i] == '\t' || string[i] == '\n'){
+      continue;
+    }
+    else if(string[i] == '&'){
+      return 1;
+    }
+    else{
+      return 0;
+    }
+  }
+  return 0;
+}
+
+void remAmp(char* old_str, char* new_str){
+  int pos;
+
+  int len = (int)strlen(old_str);
+  for(int i = len-1; i >=0; i--){
+    if(old_str[i] == '&'){
+      pos = i;
+      break;
+    }
+  }
+
+  int i;
+
+  for(i = 0; i < pos; i++){
+    new_str[i] = old_str[i];
+  }
+
+  new_str[i] = '\0';
+}
+
 void history(){
     int i=0;
     while(strncmp(user_input[i],"\0", strlen(user_input[i]))){
@@ -88,7 +132,7 @@ int launch(char command[30],char arg[50],int mode){
     }
 
     else if(status == 0){
-        if(mode == 0){
+        if(mode == 0 || mode == 3){
             char* args[50];
             char str[50];
             char* str2 = (char*)malloc(50*sizeof(char));
@@ -211,13 +255,16 @@ int launch(char command[30],char arg[50],int mode){
 
     else{
         int ret;
-        int pid = wait(&ret);
 
-        if(!WIFEXITED(ret)) {
-            printf("Abnormal termination of %d\n",pid);
+        if(mode != 2 && mode != 3){
+            status = wait(&ret);
+
+            if(!WIFEXITED(ret)) {
+                printf("Abnormal termination of %d\n",status);
+            }
         }
 
-        return pid;
+        return status;
     }
 }
 
@@ -227,6 +274,7 @@ void shell_loop(){
     char command[30];
     char arg[50];
     signal(SIGINT,Escape_sequence);
+    signal(SIGCHLD,Escape_sequence);
     do{
         char cwd[PATH_MAX];
         getcwd(cwd,sizeof(cwd));
@@ -241,6 +289,14 @@ void shell_loop(){
 
         strncpy(user_input[curr_idx], input, 80); 
         curr_idx++;
+
+        char test_input[100];
+        int flag_bg_detect = 0;
+        if(lastBack(input) == 1){
+            remAmp(input,test_input);
+            flag_bg_detect = 1;
+            strcpy(input,test_input);
+        }
 
         if(strstr(input,"|")==NULL){
             char *token;
@@ -339,7 +395,12 @@ void shell_loop(){
                 info1 = localtime(&t);
                 strftime(buffer, sizeof buffer, "%A, %B %d - %H:%M:%S\n", info1);
 
-                status = launch(command,arg,1);
+                if(flag_bg_detect == 1){
+                    status = launch(command,arg,2);
+                }
+                else{
+                    status = launch(command,arg,1);
+                }
 
                 gettimeofday(&end, NULL);
                 u = end.tv_sec;
@@ -362,7 +423,12 @@ void shell_loop(){
             info1 = localtime(&t);
             strftime(buffer, sizeof buffer, "%A, %B %d - %H:%M:%S\n", info1);
 
-            status = launch(input,arg,0);
+            if(flag_bg_detect == 1){
+                status = launch(input,arg,3);
+            }
+            else{
+                status = launch(input,arg,0);
+            }
             
             gettimeofday(&end, NULL);
             u = end.tv_sec;
