@@ -9,11 +9,15 @@ char exit_sequence[100][2000];
 void Escape_sequence(int signum){
     if(signum == SIGINT){
         int i=0;
-        write(1,"\n",1);
+        if(write(1,"\n",1) == -1){
+            _exit(1);
+        }
         while(strncmp(exit_sequence[i],"\0", strlen(exit_sequence[i]))){
             int len = strlen(exit_sequence[i]);
             for (int j = 0; j < len; j++) {
-                write(1, &exit_sequence[i][j], 1);
+                if(write(1, &exit_sequence[i][j], 1) == -1){
+                    _exit(1);
+                }
             }
             i++;
         }
@@ -21,8 +25,8 @@ void Escape_sequence(int signum){
     }
 
     if(signum == SIGCHLD){
-        int* cstatus = 0;
-        waitpid(-1,cstatus,WNOHANG);
+        int* n = 0;
+        waitpid(-1,n,WNOHANG);
     }
 }
 
@@ -346,20 +350,39 @@ void shell_loop(){
                         struct tm* info2;
                         char buffer[64], buffer2[64];
 
-                        gettimeofday(&start, NULL);
+                        if(gettimeofday(&start, NULL) == -1){
+                            perror("ERROR");
+                            exit(1);
+                        }
+
                         t = start.tv_sec;
                         info1 = localtime(&t);
+                        if(info1 == NULL){
+                            perror("ERROR");
+                            exit(1);
+                        }
                         strftime(buffer, sizeof buffer, "%A, %B %d - %H:%M:%S\n", info1);
 
                         status = launch(command,arg,1);
                         
-                        gettimeofday(&end, NULL);
+                        if(gettimeofday(&end, NULL) == -1){
+                            perror("ERROR");
+                            exit(1);
+                        }
+
                         u = end.tv_sec;
                         info2 = localtime(&u);
+                        if(info2 == NULL){
+                            perror("ERROR");
+                            exit(1);
+                        }
                         strftime(buffer2, sizeof buffer2, "%A, %B %d - %H:%M:%S\n", info2);
 
                         double duration = ((end.tv_sec * 1000000 + end.tv_usec) - (start.tv_sec * 1000000 + start.tv_usec))/1000000.0;
-                        sprintf(exit_sequence[curr_idx-1], "%d) Command \"%s\" executed by \n\tpid: %d\n\n\tStartTime: %s\n\tEndTime: %s\n\tDuration: %lf s\n\n",curr_idx, user_input[curr_idx-1], status, buffer, buffer2, duration);
+                        if(sprintf(exit_sequence[curr_idx-1], "%d) Command \"%s\" executed by \n\tpid: %d\n\n\tStartTime: %s\n\tEndTime: %s\n\tDuration: %lf s\n\n",curr_idx, user_input[curr_idx-1], status, buffer, buffer2, duration) < 0){
+                            printf("Sprintf failed!");
+                            exit(1);
+                        }
                     }
 
                     else{
@@ -369,20 +392,39 @@ void shell_loop(){
                         struct tm* info2;
                         char buffer[64], buffer2[64];
 
-                        gettimeofday(&start, NULL);
+                        if(gettimeofday(&start, NULL) == -1){
+                            perror("ERROR");
+                            exit(1);
+                        }
+
                         t = start.tv_sec;
                         info1 = localtime(&t);
+                        if(info1 == NULL){
+                            perror("ERROR");
+                            exit(1);
+                        }
                         strftime(buffer, sizeof buffer, "%A, %B %d - %H:%M:%S\n", info1);
 
                         status = launch(input,arg,0);
                         
-                        gettimeofday(&end, NULL);
+                        if(gettimeofday(&end, NULL) == -1){
+                            perror("ERROR");
+                            exit(1);
+                        }
+
                         u = end.tv_sec;
                         info2 = localtime(&u);
+                        if(info2 == NULL){
+                            perror("ERROR");
+                            exit(1);
+                        }
                         strftime(buffer2, sizeof buffer2, "%A, %B %d - %H:%M:%S\n", info2);
 
                         double duration = ((end.tv_sec * 1000000 + end.tv_usec) - (start.tv_sec * 1000000 + start.tv_usec))/1000000.0;
-                        sprintf(exit_sequence[curr_idx-1], "%d) Command \"%s\" executed by \n\tpid: %d\n\n\tStartTime: %s\n\tEndTime: %s\n\tDuration: %lf s\n\n", curr_idx, user_input[curr_idx-1], status, buffer, buffer2, duration);
+                        if(sprintf(exit_sequence[curr_idx-1], "%d) Command \"%s\" executed by \n\tpid: %d\n\n\tStartTime: %s\n\tEndTime: %s\n\tDuration: %lf s\n\n",curr_idx, user_input[curr_idx-1], status, buffer, buffer2, duration) < 0){
+                            printf("Sprintf failed!");
+                            exit(1);
+                        }
                     }
                     
                 }
@@ -398,9 +440,17 @@ void shell_loop(){
                 struct tm* info2;
                 char buffer[64], buffer2[64];
 
-                gettimeofday(&start, NULL);
+                if(gettimeofday(&start, NULL) == -1){
+                    perror("ERROR");
+                    exit(1);
+                }
+
                 t = start.tv_sec;
                 info1 = localtime(&t);
+                if(info1 == NULL){
+                    perror("ERROR");
+                    exit(1);
+                }
                 strftime(buffer, sizeof buffer, "%A, %B %d - %H:%M:%S\n", info1);
 
                 if(flag_bg_detect == 1){
@@ -410,13 +460,24 @@ void shell_loop(){
                     status = launch(command,arg,1);
                 }
 
-                gettimeofday(&end, NULL);
+                if(gettimeofday(&end, NULL) == -1){
+                    perror("ERROR");
+                    exit(1);
+                }
+
                 u = end.tv_sec;
                 info2 = localtime(&u);
+                if(info2 == NULL){
+                    perror("ERROR");
+                    exit(1);
+                }
                 strftime(buffer2, sizeof buffer2, "%A, %B %d - %H:%M:%S\n", info2);
 
                 double duration = ((end.tv_sec * 1000000 + end.tv_usec) - (start.tv_sec * 1000000 + start.tv_usec))/1000000.0;
-                sprintf(exit_sequence[curr_idx-1], "%d) Command \"%s\" executed by \n\tpid: %d\n\n\tStartTime: %s\n\tEndTime: %s\n\tDuration: %lf s\n\n",curr_idx, user_input[curr_idx-1], status, buffer, buffer2, duration);
+                if(sprintf(exit_sequence[curr_idx-1], "%d) Command \"%s\" executed by \n\tpid: %d\n\n\tStartTime: %s\n\tEndTime: %s\n\tDuration: %lf s\n\n",curr_idx, user_input[curr_idx-1], status, buffer, buffer2, duration) < 0){
+                    printf("Sprintf failed!");
+                    exit(1);
+                }
             }
         }
         else{
@@ -427,9 +488,17 @@ void shell_loop(){
             struct tm* info2;
             char buffer[64], buffer2[64];
 
-            gettimeofday(&start, NULL);
+            if(gettimeofday(&start, NULL) == -1){
+                perror("ERROR");
+                exit(1);
+            }
+
             t = start.tv_sec;
             info1 = localtime(&t);
+            if(info1 == NULL){
+                perror("ERROR");
+                exit(1);
+            }
             strftime(buffer, sizeof buffer, "%A, %B %d - %H:%M:%S\n", info1);
 
             if(flag_bg_detect == 1){
@@ -439,13 +508,24 @@ void shell_loop(){
                 status = launch(input,arg,0);
             }
             
-            gettimeofday(&end, NULL);
+            if(gettimeofday(&end, NULL) == -1){
+                perror("ERROR");
+                exit(1);
+            }
+
             u = end.tv_sec;
             info2 = localtime(&u);
+            if(info2 == NULL){
+                perror("ERROR");
+                exit(1);
+            }
             strftime(buffer2, sizeof buffer2, "%A, %B %d - %H:%M:%S\n", info2);
 
             double duration = ((end.tv_sec * 1000000 + end.tv_usec) - (start.tv_sec * 1000000 + start.tv_usec))/1000000.0;
-            sprintf(exit_sequence[curr_idx-1], "%d) Command \"%s\" executed by \n\tpid: %d\n\n\tStartTime: %s\n\tEndTime: %s\n\tDuration: %lf s\n\n",curr_idx, user_input[curr_idx-1], status, buffer, buffer2, duration);
+            if(sprintf(exit_sequence[curr_idx-1], "%d) Command \"%s\" executed by \n\tpid: %d\n\n\tStartTime: %s\n\tEndTime: %s\n\tDuration: %lf s\n\n",curr_idx, user_input[curr_idx-1], status, buffer, buffer2, duration) < 0){
+                printf("Sprintf failed!");
+                exit(1);
+            }
         }
     }
     
