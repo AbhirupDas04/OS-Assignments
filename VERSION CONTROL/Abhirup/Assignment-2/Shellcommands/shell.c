@@ -9,11 +9,12 @@ char exit_sequence[100][2000];
 void Escape_sequence(int signum){
     if(signum == SIGINT){
         int i=0;
-        printf("caught signal %d\n",signum);
+        write(1,"\n",1);
         while(strncmp(exit_sequence[i],"\0", strlen(exit_sequence[i]))){
-            printf("%d. ", i+1);
-            yellow(exit_sequence[i]);
-            printf("\n");
+            int len = strlen(exit_sequence[i]);
+            for (int j = 0; j < len; j++) {
+                write(1, &exit_sequence[i][j], 1);
+            }
             i++;
         }
         exit(0);
@@ -351,7 +352,7 @@ void shell_loop(){
                         strftime(buffer2, sizeof buffer2, "%A, %B %d - %H:%M:%S\n", info2);
 
                         double duration = ((end.tv_sec * 1000000 + end.tv_usec) - (start.tv_sec * 1000000 + start.tv_usec))/1000000.0;
-                        sprintf(exit_sequence[curr_idx-1], "Command \"%s\" executed by \n\tpid: %d\n\n\tStartTime: %s\n\tEndTime: %s\n\tDuration: %lf s\n", user_input[curr_idx-1], status, buffer, buffer2, duration);
+                        sprintf(exit_sequence[curr_idx-1], "%d) Command \"%s\" executed by \n\tpid: %d\n\n\tStartTime: %s\n\tEndTime: %s\n\tDuration: %lf s\n\n",curr_idx, user_input[curr_idx-1], status, buffer, buffer2, duration);
                     }
 
                     else{
@@ -374,7 +375,7 @@ void shell_loop(){
                         strftime(buffer2, sizeof buffer2, "%A, %B %d - %H:%M:%S\n", info2);
 
                         double duration = ((end.tv_sec * 1000000 + end.tv_usec) - (start.tv_sec * 1000000 + start.tv_usec))/1000000.0;
-                        sprintf(exit_sequence[curr_idx-1], "Command \"%s\" executed by \n\tpid: %d\n\n\tStartTime: %s\n\tEndTime: %s\n\tDuration: %lf s\n", user_input[curr_idx-1], status, buffer, buffer2, duration);
+                        sprintf(exit_sequence[curr_idx-1], "%d) Command \"%s\" executed by \n\tpid: %d\n\n\tStartTime: %s\n\tEndTime: %s\n\tDuration: %lf s\n\n", curr_idx, user_input[curr_idx-1], status, buffer, buffer2, duration);
                     }
                 }
             
@@ -407,7 +408,7 @@ void shell_loop(){
                 strftime(buffer2, sizeof buffer2, "%A, %B %d - %H:%M:%S\n", info2);
 
                 double duration = ((end.tv_sec * 1000000 + end.tv_usec) - (start.tv_sec * 1000000 + start.tv_usec))/1000000.0;
-                sprintf(exit_sequence[curr_idx-1], "Command \"%s\" executed by \n\tpid: %d\n\n\tStartTime: %s\n\tEndTime: %s\n\tDuration: %lf s\n", user_input[curr_idx-1], status, buffer, buffer2, duration);
+                sprintf(exit_sequence[curr_idx-1], "%d) Command \"%s\" executed by \n\tpid: %d\n\n\tStartTime: %s\n\tEndTime: %s\n\tDuration: %lf s\n\n",curr_idx, user_input[curr_idx-1], status, buffer, buffer2, duration);
             }
         }
         else{
@@ -436,7 +437,7 @@ void shell_loop(){
             strftime(buffer2, sizeof buffer2, "%A, %B %d - %H:%M:%S\n", info2);
 
             double duration = ((end.tv_sec * 1000000 + end.tv_usec) - (start.tv_sec * 1000000 + start.tv_usec))/1000000.0;
-            sprintf(exit_sequence[curr_idx-1], "Command \"%s\" executed by \n\tpid: %d\n\n\tStartTime: %s\n\tEndTime: %s\n\tDuration: %lf s\n", user_input[curr_idx-1], status, buffer, buffer2, duration);
+            sprintf(exit_sequence[curr_idx-1], "%d) Command \"%s\" executed by \n\tpid: %d\n\n\tStartTime: %s\n\tEndTime: %s\n\tDuration: %lf s\n\n",curr_idx, user_input[curr_idx-1], status, buffer, buffer2, duration);
         }
     }
     
