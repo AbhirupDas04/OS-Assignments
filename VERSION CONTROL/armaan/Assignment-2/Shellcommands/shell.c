@@ -9,16 +9,16 @@ char exit_sequence[100][2000];
 void Escape_sequence(int signum){
     if(signum == SIGINT){
         int i=0;
-        char buffer[2000];
-        int len;
-        len = snprintf(buffer, sizeof(buffer), "caught signal %d\n", signum);
-        write(1, buffer, len);
+        write(1,"\n",1);
         // char arr[];
         while(strncmp(exit_sequence[i],"\0", strlen(exit_sequence[i]))){
-            len = snprintf(buffer, sizeof(buffer), "%d. ", i+1);
-            write(1, buffer, len);
-            len = snprintf(buffer, sizeof(buffer), "%s", exit_sequence[i]);
-            write(1, buffer, len);
+            //len = snprintf(buffer, sizeof(buffer), "%d. ", i+1);
+            //write(1, buffer, len);
+            //len = snprintf(buffer, sizeof(buffer), "%s", exit_sequence[i]);
+            int len = strlen(exit_sequence[i]);
+            for (int j = 0; j < len; j++) {
+                write(1, &exit_sequence[i][j], 1);
+            }
             i++;
         }
         exit(0);
@@ -202,23 +202,24 @@ int launch(char command[30],char arg[50],int mode){
             exit(0);
         }
         // ------------------------------------Extra-------------------------------------
-        // //cd
-        // else if(!strcmp(command,"cd")){
-        //     //execl("/bin/cd","/bin/cd",arg,NULL);
-        //     //this didnt work read abut it online it inbuilt function no exec file for it
-        //     //so here c implemenation for it
-        //     if (chdir(arg) != 0) {
-        //         perror("cd");
-        //     }
+        //cd
+         else if(!strcmp(command,"cd")){
+            //execl("/bin/cd","/bin/cd",arg,NULL);
+             //this didnt work read abut it online it inbuilt function no exec file for it
+            //so here c implemenation for it
+             if (chdir(arg) != 0) {
+                 perror("cd");
+             }
         //     execl("/bin/pwd","/bin/pwd",NULL);
-        //     //now i cant show the complete path onto the prompt so i will just run pwd after each successful cd
-        //     return 1;
-        // }
+            //now i cant show the complete path onto the prompt so i will just run pwd after each successful cd
+             return 1;
+         }
 
         if(!strcmp(command,"history")){
             history();
             exit(0);
         }
+        
 
         char* main_str = (char*)malloc(100);
         char* str1 = "which ";
