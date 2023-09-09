@@ -198,18 +198,17 @@ int launch(char command[30],char arg[50],int mode){
             exit(0);
         }
         // ------------------------------------Extra-------------------------------------
-        // //cd
-        // else if(!strcmp(command,"cd")){
-        //     //execl("/bin/cd","/bin/cd",arg,NULL);
-        //     //this didnt work read abut it online it inbuilt function no exec file for it
-        //     //so here c implemenation for it
-        //     if (chdir(arg) != 0) {
-        //         perror("cd");
-        //     }
-        //     execl("/bin/pwd","/bin/pwd",NULL);
-        //     //now i cant show the complete path onto the prompt so i will just run pwd after each successful cd
-        //     return 1;
-        // }
+        if(!strcmp(command,"mkdir")){
+            int status = mkdir(arg,0777);
+            if(!status){
+                green("Directory successfully created");
+                printf("\n");
+            }else{
+                red("Failed to create directory");
+                printf("\n");
+            }
+            exit(0);
+        }
 
         if(!strcmp(command,"history")){
             history();
