@@ -1,43 +1,22 @@
 #include "shell.h"
-#include<signal.h>
-//PATH_MAX wasnt working so here is a quick fix
-
-// #ifndef PATH_MAX
-// #define PATH_MAX 4096
-// #endif
 
 #define PATH_MAX 4096
 
-//main execution loop
 char user_input[100][80];
 int curr_idx =0;
-char exit_sequence[100][1000];
+char exit_sequence[100][2000];
 int spc = 0;
 
 void Escape_sequence(int signum){
     int i=0;
-    char buffer[100];
-    sprintf(buffer, "caught signal %d\n", signum);
-    write(STDOUT_FILENO, buffer, strlen(buffer));
+    printf("caught signal %d\n",signum);
     while(strncmp(exit_sequence[i],"\0", strlen(exit_sequence[i]))){
-        sprintf(buffer, "%d. ", i+1);
-        write(STDOUT_FILENO, buffer, strlen(buffer));
+        printf("%d. ", i+1);
         yellow(exit_sequence[i]);
-        write(STDOUT_FILENO, "\n", 1);
+        printf("\n");
         i++;
     }
     exit(0);
-}
-
-static void handle_signal(int signum) {
-    spc++;
-    if(spc > 1){
-        return;
-    }
-
-    if (signum == SIGINT) {
-        Escape_sequence(signum);
-    }
 }
 
 char* trim(char* string, char* str){
@@ -128,7 +107,6 @@ int launch(char command[30],char arg[50],int mode){
                 i++;
                 token = strtok(NULL,"|");
             }
-
             args[i] = NULL;
 
             for(int j = 0; j < i; j++){
@@ -174,7 +152,7 @@ int launch(char command[30],char arg[50],int mode){
                 }
             }
 
-            return 1;
+            exit(0);
         }
         // ------------------------------------Extra-------------------------------------
         // //cd
@@ -192,7 +170,7 @@ int launch(char command[30],char arg[50],int mode){
 
         if(!strcmp(command,"history")){
             history();
-            return 1;
+            exit(0);
         }
 
         char* main_str = (char*)malloc(100);
@@ -225,30 +203,21 @@ int launch(char command[30],char arg[50],int mode){
                 token = strtok(NULL," ");
             }
             args[i] = NULL;
-            int pid =getpid();
-            clock_t st = clock();
-            time_t start_time;
-            time(&start_time);
             execvp(command,args);
-            clock_t et = clock();
-            time_t end_time;
-            time(&end_time);
-            double duration = (double)et - st / CLOCKS_PER_SEC;
-            sprintf(exit_sequence[curr_idx-1], "Command \"%s\" executed by \n\tpid: %d\n\tStartTime: %s\n\tEndTime: %s\n\tDuration: %f ms", user_input[curr_idx-1], pid, ctime(&start_time), ctime(&end_time), duration);
-            printf("\n\n\n\n%s\n\n\n\n\n",exit_sequence[curr_idx-1]);
-            printf("c\n");
         }
         
-        return 1;
+        exit(0);
     }
 
     else{
         int ret;
         int pid = wait(&ret);
+
         if(!WIFEXITED(ret)) {
             printf("Abnormal termination of %d\n",pid);
         }
-        return 1;
+
+        return pid;
     }
 }
 
@@ -257,10 +226,7 @@ void shell_loop(){
     char input[100];
     char command[30];
     char arg[50];
-    struct sigaction sig;
-    memset(&sig, 0, sizeof(sig));
-    sig.sa_handler = handle_signal;
-    sigaction(SIGINT, &sig, NULL);
+    signal(SIGINT,Escape_sequence);
     do{
         char cwd[PATH_MAX];
         getcwd(cwd,sizeof(cwd));
@@ -295,7 +261,7 @@ void shell_loop(){
                 while(fgets(input, 100, fptr)) {
                     input[strcspn(input,"\n")] = 0;
 
-                    if (!strcmp(input,"")){continue;}
+                    if (!strcmp(input,"") || !strcmp(input,"\n")){continue;}
 
                     strncpy(user_input[curr_idx], input, 80); 
                     curr_idx++;
@@ -312,11 +278,49 @@ void shell_loop(){
                             strcpy(arg, "");
                         }
 
+                        struct timeval start, end;
+                        time_t t,u;
+                        struct tm* info1;
+                        struct tm* info2;
+                        char buffer[64], buffer2[64];
+
+                        gettimeofday(&start, NULL);
+                        t = start.tv_sec;
+                        info1 = localtime(&t);
+                        strftime(buffer, sizeof buffer, "%A, %B %d - %H:%M:%S\n", info1);
+
                         status = launch(command,arg,1);
+                        
+                        gettimeofday(&end, NULL);
+                        u = end.tv_sec;
+                        info2 = localtime(&u);
+                        strftime(buffer2, sizeof buffer2, "%A, %B %d - %H:%M:%S\n", info2);
+
+                        double duration = ((end.tv_sec * 1000000 + end.tv_usec) - (start.tv_sec * 1000000 + start.tv_usec))/1000000.0;
+                        sprintf(exit_sequence[curr_idx-1], "Command \"%s\" executed by \n\tpid: %d\n\n\tStartTime: %s\n\tEndTime: %s\n\tDuration: %lf s\n", user_input[curr_idx-1], status, buffer, buffer2, duration);
                     }
 
                     else{
+                        struct timeval start, end;
+                        time_t t,u;
+                        struct tm* info1;
+                        struct tm* info2;
+                        char buffer[64], buffer2[64];
+
+                        gettimeofday(&start, NULL);
+                        t = start.tv_sec;
+                        info1 = localtime(&t);
+                        strftime(buffer, sizeof buffer, "%A, %B %d - %H:%M:%S\n", info1);
+
                         status = launch(input,arg,0);
+                        
+                        gettimeofday(&end, NULL);
+                        u = end.tv_sec;
+                        info2 = localtime(&u);
+                        strftime(buffer2, sizeof buffer2, "%A, %B %d - %H:%M:%S\n", info2);
+
+                        double duration = ((end.tv_sec * 1000000 + end.tv_usec) - (start.tv_sec * 1000000 + start.tv_usec))/1000000.0;
+                        sprintf(exit_sequence[curr_idx-1], "Command \"%s\" executed by \n\tpid: %d\n\n\tStartTime: %s\n\tEndTime: %s\n\tDuration: %lf s\n", user_input[curr_idx-1], status, buffer, buffer2, duration);
                     }
                 }
             
@@ -324,14 +328,51 @@ void shell_loop(){
             }
 
             else{
+                struct timeval start, end;
+                time_t t,u;
+                struct tm* info1;
+                struct tm* info2;
+                char buffer[64], buffer2[64];
+
+                gettimeofday(&start, NULL);
+                t = start.tv_sec;
+                info1 = localtime(&t);
+                strftime(buffer, sizeof buffer, "%A, %B %d - %H:%M:%S\n", info1);
+
                 status = launch(command,arg,1);
+
+                gettimeofday(&end, NULL);
+                u = end.tv_sec;
+                info2 = localtime(&u);
+                strftime(buffer2, sizeof buffer2, "%A, %B %d - %H:%M:%S\n", info2);
+
+                double duration = ((end.tv_sec * 1000000 + end.tv_usec) - (start.tv_sec * 1000000 + start.tv_usec))/1000000.0;
+                sprintf(exit_sequence[curr_idx-1], "Command \"%s\" executed by \n\tpid: %d\n\n\tStartTime: %s\n\tEndTime: %s\n\tDuration: %lf s\n", user_input[curr_idx-1], status, buffer, buffer2, duration);
             }
-            
         }
         else{
+            struct timeval start, end;
+            time_t t,u;
+            struct tm* info1;
+            struct tm* info2;
+            char buffer[64], buffer2[64];
+
+            gettimeofday(&start, NULL);
+            t = start.tv_sec;
+            info1 = localtime(&t);
+            strftime(buffer, sizeof buffer, "%A, %B %d - %H:%M:%S\n", info1);
+
             status = launch(input,arg,0);
+            
+            gettimeofday(&end, NULL);
+            u = end.tv_sec;
+            info2 = localtime(&u);
+            strftime(buffer2, sizeof buffer2, "%A, %B %d - %H:%M:%S\n", info2);
+
+            double duration = ((end.tv_sec * 1000000 + end.tv_usec) - (start.tv_sec * 1000000 + start.tv_usec))/1000000.0;
+            sprintf(exit_sequence[curr_idx-1], "Command \"%s\" executed by \n\tpid: %d\n\n\tStartTime: %s\n\tEndTime: %s\n\tDuration: %lf s\n", user_input[curr_idx-1], status, buffer, buffer2, duration);
         }
     }
-
+    
     while(status != 0);
 }
