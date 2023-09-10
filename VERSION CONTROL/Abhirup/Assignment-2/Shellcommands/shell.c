@@ -276,12 +276,10 @@ int launch(char command[30],char arg[50],int mode){
         }
 
         if(!strcmp(command,"history")){
-            if(arg!= NULL){
-                if(mode == 2 || mode == 3){
-                    history();
-                    exit(0);
-                }
-                printf("No args can be passed to history!\n");
+            char temp[100];
+            trim(arg,temp);
+            if(strlen(temp) > 0){
+                printf("Too many args!");
                 exit(1);
             }
             history();
@@ -425,12 +423,18 @@ void shell_loop(){
                     continue;
                 }
 
-                while(fgets(input, 100, fptr)) {
-                    // printf("\n\n%p\n",(void*)fptr);
-                    input[strcspn(input,"\n")] = 0;
-                    //printf("%s\n\n",input);
+                long cursor;
 
-                    if (!strcmp(input,"") || !strcmp(input,"\n")){
+                while(fgets(input, 100, fptr)) {
+                    cursor = ftell(fptr);
+                    if(cursor == -1){
+                        printf("ftell failed!\n");
+                        exit(1);
+                    }
+
+                    input[strcspn(input,"\n")] = 0;
+
+                    if(!strcmp(input,"") || !strcmp(input,"\n")){
                         continue;
                     }
 
@@ -550,6 +554,11 @@ void shell_loop(){
                             printf("Sprintf failed!");
                             exit(1);
                         }
+                    }
+
+                    if(fseek(fptr,cursor,SEEK_SET) == -1){
+                        perror("ERROR");
+                        exit(1);
                     }
                     
                 }
