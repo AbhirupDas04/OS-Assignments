@@ -130,8 +130,8 @@ int launch(char command[30],char arg[50],int mode){
     int status = fork();
 
     if(status < 0){
-        printf("Fork Failed");
-        return 1;
+        printf("Fork Failed!");
+        return 0;
     }
 
     else if(status == 0){
@@ -139,6 +139,12 @@ int launch(char command[30],char arg[50],int mode){
             char* args[50];
             char str[50];
             char* str2 = (char*)malloc(50*sizeof(char));
+
+            if(str2 == NULL){
+                printf("Malloc failed!");
+                exit(EXIT_FAILURE);
+            }
+
             char* token = strtok(command,"|");
 
             int fd[2];
@@ -151,21 +157,46 @@ int launch(char command[30],char arg[50],int mode){
                 args[i] = str2;
                 str2 = str;
                 str2 = (char*)malloc(50*sizeof(char));
+
+                if(str2 == NULL){
+                    printf("Malloc failed!");
+                    exit(EXIT_FAILURE);
+                }
+
                 i++;
                 token = strtok(NULL,"|");
             }
             args[i] = NULL;
 
             for(int j = 0; j < i; j++){
-                pipe(fd);
+                if(pipe(fd) == -1){
+                    perror("ERROR");
+                    exit(EXIT_FAILURE);
+                }
 
                 int pid = fork();
+                if(pid < 0){
+                    perror("ERROR");
+                    exit(EXIT_FAILURE);
+                }
+
                 if(pid == 0){
-                    dup2(tmp, 0);
-                    if(j != i-1){
-                        dup2(fd[1], 1);
+                    if(dup2(tmp, 0) == -1){
+                        perror("ERROR");
+                        exit(EXIT_FAILURE);
                     }
-                    close(fd[0]);
+
+                    if(j != i-1){
+                        if(dup2(fd[1], 1) == -1){
+                            perror("ERROR");
+                            exit(EXIT_FAILURE);
+                        }
+                    }
+
+                    if(close(fd[0]) == -1){
+                        perror("ERROR");
+                        exit(EXIT_FAILURE);
+                    }
 
                     char arg3[50];
                     char *token1;
@@ -190,11 +221,28 @@ int launch(char command[30],char arg[50],int mode){
                     }
                     arg2[i] = NULL;
 
-                    execvp(args[j],arg2);
+                    if(execvp(args[j],arg2) == -1){
+                        perror("ERROR");
+                        exit(EXIT_FAILURE);
+                    }
+
+                    printf("Error: Execvp failed!");
+                    exit(EXIT_FAILURE);
                 }
                 else{
-                    wait(NULL);
-                    close(fd[1]);
+                    int ret;
+                    int pid = wait(&ret);
+
+                    if(!WIFEXITED(ret)) {
+                        printf("Abnormal termination of %d\n",pid);
+                        exit(EXIT_FAILURE);
+                    }
+
+                    if(close(fd[1]) == -1){
+                        perror("ERROR");
+                        exit(EXIT_FAILURE);
+                    }
+
                     tmp = fd[0];
                 }
             }
@@ -203,11 +251,20 @@ int launch(char command[30],char arg[50],int mode){
         }
 
         if(!strcmp(command,"history")){
+            if(arg!= NULL){
+                printf("No args can be passed to history!\n");
+                exit(1);
+            }
             history();
             exit(0);
         }
 
         char* main_str = (char*)malloc(100);
+        if(main_str == NULL){
+            printf("Malloc failed!");
+            exit(EXIT_FAILURE);
+        }
+
         char* str1 = "which ";
         char* str2 = " > /dev/null 2>.1";
         int curr_index = 0;
@@ -223,8 +280,15 @@ int launch(char command[30],char arg[50],int mode){
             main_str[curr_index] = str2[i];
             curr_index++;
         }
-        if(system(main_str)){
+
+        int val = system(main_str);
+        if(val){
             printf("Command: \"%s\" not found.\n",command); 
+            exit(0);
+        }
+        else if(val == -1){
+            perror("ERROR");
+            exit(EXIT_FAILURE);
         }
         else{
             char* args[50];
@@ -237,7 +301,13 @@ int launch(char command[30],char arg[50],int mode){
                 token = strtok(NULL," ");
             }
             args[i] = NULL;
-            execvp(command,args);
+            if(execvp(command,args) == -1){
+                perror("ERROR");
+                exit(EXIT_FAILURE);
+            }
+
+            printf("Exec Failed!\n");
+            exit(EXIT_FAILURE);
         }
         
         exit(0);
