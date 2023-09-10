@@ -168,6 +168,9 @@ int launch(char command[30],char arg[50],int mode){
             }
             args[i] = NULL;
 
+            int stdin_storage = 0;
+            int stdout_storage = 1;
+
             for(int j = 0; j < i; j++){
                 if(pipe(fd) == -1){
                     perror("ERROR");
@@ -181,12 +184,23 @@ int launch(char command[30],char arg[50],int mode){
                 }
 
                 if(pid == 0){
+                    if((stdin_storage = dup(STDIN_FILENO)) == -1){
+                        perror("ERROR");
+                        exit(EXIT_FAILURE);
+                    }
+
                     if(dup2(tmp, 0) == -1){
                         perror("ERROR");
                         exit(EXIT_FAILURE);
                     }
 
                     if(j != i-1){
+                        stdout_storage = dup(STDOUT_FILENO);
+                        if(stdout_storage == -1){
+                            perror("ERROR");
+                            exit(EXIT_FAILURE);
+                        }
+
                         if(dup2(fd[1], 1) == -1){
                             perror("ERROR");
                             exit(EXIT_FAILURE);
@@ -245,6 +259,15 @@ int launch(char command[30],char arg[50],int mode){
 
                     tmp = fd[0];
                 }
+            }
+
+            if(dup2(stdin_storage, STDIN_FILENO) == -1){
+                perror("ERROR");
+                exit(1);
+            }
+            if(dup2(stdout_storage,STDOUT_FILENO) == -1){
+                perror("ERROR");
+                exit(1);
             }
 
             free(str2);
@@ -403,9 +426,13 @@ void shell_loop(){
                 }
 
                 while(fgets(input, 100, fptr)) {
+                    // printf("\n\n%p\n",(void*)fptr);
                     input[strcspn(input,"\n")] = 0;
+                    //printf("%s\n\n",input);
 
-                    if (!strcmp(input,"") || !strcmp(input,"\n")){continue;}
+                    if (!strcmp(input,"") || !strcmp(input,"\n")){
+                        continue;
+                    }
 
                     strncpy(user_input[curr_idx], input, 80); 
 
@@ -495,8 +522,11 @@ void shell_loop(){
                         }
                         strftime(buffer, sizeof buffer, "%A, %B %d - %H:%M:%S\n", info1);
 
+                        // printf("\n\n\n\n%s\n\n\n\n",input);
+
                         if(flag_bg_detect == 1){
                             status = launch(input,arg,3);
+
                         }
                         else{
                             status = launch(input,arg,0);
