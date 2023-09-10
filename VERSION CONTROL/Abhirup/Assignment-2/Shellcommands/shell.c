@@ -254,6 +254,10 @@ int launch(char command[30],char arg[50],int mode){
 
         if(!strcmp(command,"history")){
             if(arg!= NULL){
+                if(mode == 2 || mode == 3){
+                    history();
+                    exit(0);
+                }
                 printf("No args can be passed to history!\n");
                 exit(1);
             }
@@ -404,6 +408,13 @@ void shell_loop(){
                     if (!strcmp(input,"") || !strcmp(input,"\n")){continue;}
 
                     strncpy(user_input[curr_idx], input, 80); 
+
+                    if(lastBack(input) == 1){
+                        remAmp(input,test_input);
+                        flag_bg_detect = 1;
+                        strcpy(input,test_input);
+                    }
+
                     curr_idx++;
 
                     if(strstr(input,"|")==NULL){
@@ -437,7 +448,12 @@ void shell_loop(){
                         }
                         strftime(buffer, sizeof buffer, "%A, %B %d - %H:%M:%S\n", info1);
 
-                        status = launch(command,arg,1);
+                        if(flag_bg_detect == 1){
+                            status = launch(command,arg,2);
+                        }
+                        else{
+                            status = launch(command,arg,1);
+                        }
                         
                         if(gettimeofday(&end, NULL) == -1){
                             perror("ERROR");
@@ -479,7 +495,12 @@ void shell_loop(){
                         }
                         strftime(buffer, sizeof buffer, "%A, %B %d - %H:%M:%S\n", info1);
 
-                        status = launch(input,arg,0);
+                        if(flag_bg_detect == 1){
+                            status = launch(input,arg,3);
+                        }
+                        else{
+                            status = launch(input,arg,0);
+                        }
                         
                         if(gettimeofday(&end, NULL) == -1){
                             perror("ERROR");
