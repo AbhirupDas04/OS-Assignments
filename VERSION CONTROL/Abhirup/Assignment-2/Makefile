@@ -15,4 +15,4 @@ $(BIN): $(OBJ)
 .PHONY: clean
 
 clean:
-	rm -f $(OBJ) $(BIN)
+	rm -f $(OBJ) $(BIN) ./bin/.*
