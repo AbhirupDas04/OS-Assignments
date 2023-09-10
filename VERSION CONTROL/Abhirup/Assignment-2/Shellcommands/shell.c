@@ -247,6 +247,8 @@ int launch(char command[30],char arg[50],int mode){
                 }
             }
 
+            free(str2);
+
             exit(0);
         }
 
@@ -309,6 +311,8 @@ int launch(char command[30],char arg[50],int mode){
             printf("Exec Failed!\n");
             exit(EXIT_FAILURE);
         }
+
+        free(main_str);
         
         exit(0);
     }
