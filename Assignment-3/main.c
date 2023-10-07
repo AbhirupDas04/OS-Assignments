@@ -20,6 +20,23 @@ int main(int argc, char** argv){
         exit(1);
     }
 
+    int len_ncpu = strlen(argv[1]);
+    int len_tslice = strlen(argv[2]);
+
+    for(int i = 0; i < len_ncpu; i++){
+        if(argv[1][i] == '.'){
+            printf("NCPU can't be a float!\n");
+            exit(1);
+        }
+    }
+
+    for(int i = 0; i < len_tslice; i++){
+        if(argv[2][i] == '.'){
+            printf("Tslice will accept only integer values in our implementation!\n");
+            exit(1);
+        }
+    }
+
     shell_loop(NCPU,TSLICE);
     return 0; 
 }
