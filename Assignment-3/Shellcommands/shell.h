@@ -6,8 +6,9 @@
 #include "Colors/color.h"
 #include <time.h>
 #include <sys/time.h>
-#include<features.h>
+#include <features.h>
 #include <signal.h>
 #include<stdlib.h>
 #include<sys/stat.h>
-void shell_loop();
+
+void shell_loop(int NCPU, int TSLICE);

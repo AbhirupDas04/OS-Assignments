@@ -357,7 +357,7 @@ int launch(char command[30],char arg[50],int mode){
     }
 }
 
-void shell_loop(){
+void shell_loop(int NCPU, int TSLICE){
     int status = 1;
     char input[100];
     char command[30];
