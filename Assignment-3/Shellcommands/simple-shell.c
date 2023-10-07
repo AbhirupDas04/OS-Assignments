@@ -291,12 +291,39 @@ int launch(char command[30],char arg[50],int mode){
         if(!strcmp(command,"submit")){
             char temp[100];
             char temp2[100];
+            char* arr_args[100];
+            int n_args = 1;
+
             trim(arg,temp);
             if(forward_trim(temp,temp2) == NULL){
                 printf("Incorrect number of arguments to 'submit', has to be at least 1 and max 2!\n");
                 exit(1);
             }
-            else{
+            char* temp3 = strtok(temp2," ");
+            arr_args[0] = temp3;
+            while(temp3 != NULL) {
+                temp3 = strtok(NULL," ");
+                arr_args[n_args] = temp3;
+                n_args++;
+            }
+
+            n_args--;
+
+            if(n_args > 2){
+                printf("Too many args to 'Submit'!\n");
+                exit(1);
+            }
+
+            if (access(arr_args[0], F_OK|X_OK) != 0){
+                printf("Not an executable or Executable doesn't exist!\n");
+                exit(1);
+            }
+
+            if(n_args == 1){
+
+            }
+            if(n_args == 2){
+
             }
 
             exit(0);
