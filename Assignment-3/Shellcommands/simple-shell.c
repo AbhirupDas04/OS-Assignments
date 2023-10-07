@@ -2,10 +2,6 @@
 
 #define PATH_MAX 4096
 
-char user_input[100][80];
-int curr_idx =0;
-char exit_sequence[100][2000];
-
 void Escape_sequence(int signum){
     if(signum == SIGINT){
         _exit(0);
@@ -500,8 +496,6 @@ void shell_loop(int NCPU, int TSLICE){
                         strcpy(input,test_input);
                     }
 
-                    curr_idx++;
-
                     if(strstr(input,"|")==NULL){
                         char *token;
                         token = strtok(input, " ");
@@ -514,8 +508,6 @@ void shell_loop(int NCPU, int TSLICE){
                             strcpy(arg, "");
                         }
 
-                        char buffer[64], buffer2[64];
-
                         if(flag_bg_detect == 1){
                             status = launch(command,arg,2);
                         }
@@ -525,8 +517,6 @@ void shell_loop(int NCPU, int TSLICE){
                     }
 
                     else{
-                        char buffer[64], buffer2[64];
-
                         if(flag_bg_detect == 1){
                             status = launch(input,arg,3);
 
@@ -547,9 +537,6 @@ void shell_loop(int NCPU, int TSLICE){
             }
 
             else{
-                curr_idx++;
-                char buffer[64], buffer2[64];
-
                 if(flag_bg_detect == 1){
                     status = launch(command,arg,2);
                 }
@@ -559,9 +546,6 @@ void shell_loop(int NCPU, int TSLICE){
             }
         }
         else{
-            curr_idx++;
-            char buffer[64], buffer2[64];
-
             if(flag_bg_detect == 1){
                 status = launch(input,arg,3);
             }
