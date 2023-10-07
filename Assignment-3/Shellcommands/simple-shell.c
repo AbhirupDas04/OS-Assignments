@@ -290,7 +290,15 @@ int launch(char command[30],char arg[50],int mode){
 
         if(!strcmp(command,"submit")){
             char temp[100];
+            char temp2[100];
             trim(arg,temp);
+            if(forward_trim(temp,temp2) == NULL){
+                printf("Incorrect number of arguments to 'submit', has to be at least 1 and max 2!\n");
+                exit(1);
+            }
+            else{
+            }
+
             exit(0);
         }
 
