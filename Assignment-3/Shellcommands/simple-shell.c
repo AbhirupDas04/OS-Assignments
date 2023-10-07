@@ -8,19 +8,6 @@ char exit_sequence[100][2000];
 
 void Escape_sequence(int signum){
     if(signum == SIGINT){
-        int i=0;
-        if(write(1,"\n",1) == -1){
-            _exit(1);
-        }
-        while(strncmp(exit_sequence[i],"\0", strlen(exit_sequence[i]))){
-            int len = strlen(exit_sequence[i]);
-            for (int j = 0; j < len; j++) {
-                if(write(1, &exit_sequence[i][j], 1) == -1){
-                    _exit(1);
-                }
-            }
-            i++;
-        }
         _exit(0);
     }
 
@@ -275,6 +262,11 @@ int launch(char command[30],char arg[50],int mode){
             exit(0);
         }
 
+        if(!strcmp(command,"submit")){
+            printf("%s\n%s %d",command,arg,mode);
+            exit(0);
+        }
+
         if(!strcmp(command,"history")){
             char temp[100];
             trim(arg,temp);
@@ -459,7 +451,7 @@ void shell_loop(int NCPU, int TSLICE){
                         else {
                             strcpy(arg, "");
                         }
-                        
+
                         char buffer[64], buffer2[64];
 
                         if(flag_bg_detect == 1){
