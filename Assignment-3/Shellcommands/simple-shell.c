@@ -67,6 +67,32 @@ char* trim(char* string, char* str){
     return str;
 }
 
+char* forward_trim(char* string, char* str){
+    int index = 0;
+    int len = strlen(string);
+
+    for(int i = 0; i < len; i++){
+        if(string[i] == ' ' || string[i] == '\t' || string[i] == '\n' || string[i] == '\0'){
+            if(index!=0){
+                str[index] = string[i];
+                index++;
+            }
+            continue;
+        }
+        else{
+            str[index] = string[i];
+            index++;
+        }
+    }
+
+    if(index == 0){
+        return NULL;
+    }
+
+    str[index] = '\0';
+    return str;
+}
+
 int lastBack(char* string){
   int len = (int)strlen(string);
   for(int i = len-1; i >=0; i--){
@@ -263,7 +289,8 @@ int launch(char command[30],char arg[50],int mode){
         }
 
         if(!strcmp(command,"submit")){
-            printf("%s\n%s %d",command,arg,mode);
+            char temp[100];
+            trim(arg,temp);
             exit(0);
         }
 
