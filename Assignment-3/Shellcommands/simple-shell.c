@@ -14,6 +14,8 @@ typedef struct Process_Queue{
 
 Proc_Queue* queue;
 
+char* text = "Shared_Mem";
+
 void Escape_sequence(int signum){
     if(signum == SIGINT){
         _exit(0);
@@ -434,6 +436,10 @@ void shell_loop(int NCPU, int TSLICE){
         perror("ERROR");
         exit(1);
     }
+
+    int fd_shm = shm_open(text,O_CREAT | O_RDWR, 0777);
+    ftruncate(fd_shm,4096);
+    a = (int*)mmap(NULL,4096,PROT_READ | PROT_WRITE | PROT_EXEC,MAP_SHARED,fd_shm,0);
 
     do{
         char cwd[PATH_MAX];

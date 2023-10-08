@@ -38,5 +38,6 @@ int main(int argc, char** argv){
     }
 
     shell_loop(NCPU,TSLICE);
+    
     return 0; 
 }

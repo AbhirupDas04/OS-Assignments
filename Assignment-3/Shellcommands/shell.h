@@ -8,7 +8,9 @@
 #include <sys/time.h>
 #include <features.h>
 #include <signal.h>
-#include<stdlib.h>
-#include<sys/stat.h>
+#include <stdlib.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 void shell_loop(int NCPU, int TSLICE);
