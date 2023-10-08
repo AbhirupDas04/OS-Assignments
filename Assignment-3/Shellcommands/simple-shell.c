@@ -1,6 +1,17 @@
 #include "shell.h"
+#include <semaphore.h>
 
 #define PATH_MAX 4096
+
+char user_input[100][80];
+int curr_idx =0;
+
+typedef struct Process_Queue{
+    int n_proc;
+    sem_t lock;
+}Proc_Queue;
+
+Proc_Queue* queue;
 
 void Escape_sequence(int signum){
     if(signum == SIGINT){
@@ -135,7 +146,7 @@ void history(){
     }
 }
 
-int launch(char command[30],char arg[50],int mode){
+int launch(char command[30],char arg[50],int mode, int NCPU, int TSLICE){
     int status = fork();
 
     if(status < 0){
@@ -423,15 +434,34 @@ void shell_loop(int NCPU, int TSLICE){
         exit(1);
     }
 
+    int status3 = fork();
+    if(status3 == 0){
+        int status2 = fork();
+        if(status2<0){
+            printf("Fork Failure!\n");
+            exit(1);
+        }
+        else if(status2 == 0){
+            queue->n_proc = 0;
+            sem_init(&queue->lock,1,0);
+            exit(0);
+        }
+        else{
+            _exit(0);
+        }
+    }
+    else if(status3 < 0){
+        printf("Fork for Creation of Scheduler Process Failed!\n");
+        exit(1);
+    }
+
     do{
         char cwd[PATH_MAX];
         if(getcwd(cwd,sizeof(cwd)) == NULL){
             perror("ERROR");
             exit(1);
         }
-        magenta("assignment2@shell:");
-        cyan("~");
-        yellow(cwd);
+        magenta("SimpleShell");
         white("$ ");
 
         if(fgets(input,100,stdin) == NULL){
@@ -496,6 +526,8 @@ void shell_loop(int NCPU, int TSLICE){
                         strcpy(input,test_input);
                     }
 
+                    curr_idx++;
+
                     if(strstr(input,"|")==NULL){
                         char *token;
                         token = strtok(input, " ");
@@ -509,20 +541,20 @@ void shell_loop(int NCPU, int TSLICE){
                         }
 
                         if(flag_bg_detect == 1){
-                            status = launch(command,arg,2);
+                            status = launch(command,arg,2,NCPU,TSLICE);
                         }
                         else{
-                            status = launch(command,arg,1);
+                            status = launch(command,arg,1,NCPU,TSLICE);
                         }
                     }
 
                     else{
                         if(flag_bg_detect == 1){
-                            status = launch(input,arg,3);
+                            status = launch(input,arg,3,NCPU,TSLICE);
 
                         }
                         else{
-                            status = launch(input,arg,0);
+                            status = launch(input,arg,0,NCPU,TSLICE);
                         }
                     }
 
@@ -537,20 +569,22 @@ void shell_loop(int NCPU, int TSLICE){
             }
 
             else{
+                curr_idx++;
                 if(flag_bg_detect == 1){
-                    status = launch(command,arg,2);
+                    status = launch(command,arg,2,NCPU,TSLICE);
                 }
                 else{
-                    status = launch(command,arg,1);
+                    status = launch(command,arg,1,NCPU,TSLICE);
                 }
             }
         }
         else{
+            curr_idx++;
             if(flag_bg_detect == 1){
-                status = launch(input,arg,3);
+                status = launch(input,arg,3,NCPU,TSLICE);
             }
             else{
-                status = launch(input,arg,0);
+                status = launch(input,arg,0,NCPU,TSLICE);
             }
         }
     }
