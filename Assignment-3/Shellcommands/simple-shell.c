@@ -435,28 +435,6 @@ void shell_loop(int NCPU, int TSLICE){
         exit(1);
     }
 
-    int status3 = fork();
-    if(status3 == 0){
-        int status2 = fork();
-        if(status2<0){
-            printf("Fork Failure!\n");
-            exit(1);
-        }
-        else if(status2 == 0){
-            queue->n_proc = 0;
-            queue->active_flag = 0;
-            sem_init(&queue->lock,1,0);
-            exit(0);
-        }
-        else{
-            _exit(0);
-        }
-    }
-    else if(status3 < 0){
-        printf("Fork for Creation of Scheduler Process Failed!\n");
-        exit(1);
-    }
-
     do{
         char cwd[PATH_MAX];
         if(getcwd(cwd,sizeof(cwd)) == NULL){
