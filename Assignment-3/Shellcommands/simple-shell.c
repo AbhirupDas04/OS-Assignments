@@ -9,6 +9,7 @@ int curr_idx =0;
 typedef struct Process_Queue{
     int n_proc;
     sem_t lock;
+    int active_flag;
 }Proc_Queue;
 
 Proc_Queue* queue;
@@ -443,6 +444,7 @@ void shell_loop(int NCPU, int TSLICE){
         }
         else if(status2 == 0){
             queue->n_proc = 0;
+            queue->active_flag = 0;
             sem_init(&queue->lock,1,0);
             exit(0);
         }
