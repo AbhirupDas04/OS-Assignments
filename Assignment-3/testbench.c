@@ -1,5 +1,16 @@
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <time.h>
+#include <sys/time.h>
+#include <features.h>
+#include <signal.h>
+#include <stdlib.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 #include <semaphore.h>
 
 typedef struct Process_Queue{
@@ -85,6 +96,31 @@ char* forward_trim(char* string, char* str){
     return str;
 }
 
+void Escape_sequence(int signum){
+    if(signum == SIGINT){
+        _exit(0);
+    }
+
+    if(signum == SIGCHLD){
+        int* n = 0;
+        int pid = waitpid(-1,n,WCONTINUED);
+        printf("%d\n",pid);
+    }
+}
+
 void main(){
-    printf("%ld",sizeof(Proc_Queue));
+    if(signal(SIGCHLD,Escape_sequence) == SIG_ERR){
+        perror("ERROR");
+        exit(1);
+    }
+    int status = fork();
+    if(status == 0){
+        printf("THE AUNT!!!\n");
+        exit(0);
+    }
+    else if (status > 0){
+        printf("angry");
+        wait(NULL);
+        printf("angry");
+    }
 }

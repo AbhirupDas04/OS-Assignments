@@ -555,10 +555,28 @@ void shell_loop(int NCPU, int TSLICE){
                             continue;
                         }
 
-                        printf("cat\n");
+                        int new_proc_status = fork();
+                        if(new_proc_status < 0){
+                            printf("Fork Failure.\n");
+                            continue;
+                        }
+                        else if (new_proc_status == 0){
+                            int status3 = fork();
+                            if(status3 < 0){
+                                printf("Fork Failure.\n");
+                                continue;
+                            }
+                            else if(status3 > 0){
+                                _exit(0);
+                            }
+                            else{
+                                
+                                exit(0);
+                            }
+                        }
 
                         sem_wait(&queue->lock);
-
+                        queue->n_proc++;
                         sem_post(&queue->lock);
 
                         if(n_args == 1){
@@ -585,7 +603,13 @@ void shell_loop(int NCPU, int TSLICE){
                             else{
                                 sem_wait(&queue->lock);
                                 if(queue->active_flag == 0){
+                                    queue->active_flag = 1;
                                     sem_post(&queue->lock);
+
+                                    while(true){
+
+                                    }
+
                                     exit(0);
                                 }
                                 else{
