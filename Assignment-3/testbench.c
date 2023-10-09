@@ -111,6 +111,7 @@ void Escape_sequence(int signum){
 
 
 void main(){
+
     /*
     if(signal(SIGCHLD,Escape_sequence) == SIG_ERR){
         perror("ERROR");
