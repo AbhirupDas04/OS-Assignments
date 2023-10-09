@@ -104,11 +104,36 @@ void Escape_sequence(int signum){
     if(signum == SIGCHLD){
         int* n = 0;
         int pid = waitpid(-1,n,WCONTINUED);
+        printf("%d\n",pid);
     }
 }
 
+long long timeDEFF(){
+    clock_t diff = end - start;
+    long long msec = (diff * 1000) / CLOCKS_PER_SEC;
+    return msec;
+}
+
 void main(){
-    printf("aunt\n");
-    usleep(1250000);
-    printf("Armaan\n");
+    /*
+    if(signal(SIGCHLD,Escape_sequence) == SIG_ERR){
+        perror("ERROR");
+        exit(1);
+    }
+    int status = fork();
+    if(status == 0){
+        printf("THE AUNT!!!\n");
+        exit(0);
+    }
+    else if (status > 0){
+        printf("angry");
+        wait(NULL);
+        printf("angry");
+    }*/
+    clock_t startTime = clock();
+    sleep(10);
+    clock_t endTime = clock();
+    long long elapsedTime = timeDifferenceInMillis(startTime, endTime);
+    printf("Time elapsed: %lld milliseconds\n", elapsedTime);
+    return 0;
 }
