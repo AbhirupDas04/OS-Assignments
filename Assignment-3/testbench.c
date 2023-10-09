@@ -104,23 +104,11 @@ void Escape_sequence(int signum){
     if(signum == SIGCHLD){
         int* n = 0;
         int pid = waitpid(-1,n,WCONTINUED);
-        printf("%d\n",pid);
     }
 }
 
 void main(){
-    if(signal(SIGCHLD,Escape_sequence) == SIG_ERR){
-        perror("ERROR");
-        exit(1);
-    }
-    int status = fork();
-    if(status == 0){
-        printf("THE AUNT!!!\n");
-        exit(0);
-    }
-    else if (status > 0){
-        printf("angry");
-        wait(NULL);
-        printf("angry");
-    }
+    printf("aunt\n");
+    usleep(1250000);
+    printf("Armaan\n");
 }

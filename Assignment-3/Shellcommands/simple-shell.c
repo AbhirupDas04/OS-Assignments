@@ -595,7 +595,6 @@ void shell_loop(int NCPU, int TSLICE){
                                 _exit(0);
                             }
                             else{
-
                                 //edit two
                                 //creating a function for it
                                 stopAdd(queue,getpid());
@@ -633,9 +632,9 @@ void shell_loop(int NCPU, int TSLICE){
 
 
                                     while(1){
-                                        printf("aunt\n");
+                                        
                                         usleep(1250000);
-                                        printf("Armaan\n");
+                                    }
 
                                     exit(0);
                                 }
