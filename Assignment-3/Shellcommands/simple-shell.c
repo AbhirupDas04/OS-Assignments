@@ -570,7 +570,7 @@ void shell_loop(int NCPU, int TSLICE){
                                 _exit(0);
                             }
                             else{
-                                
+
                                 exit(0);
                             }
                         }
@@ -606,9 +606,9 @@ void shell_loop(int NCPU, int TSLICE){
                                     queue->active_flag = 1;
                                     sem_post(&queue->lock);
 
-                                    while(true){
+                                    // while(true){
 
-                                    }
+                                    // }
 
                                     exit(0);
                                 }
