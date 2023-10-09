@@ -607,9 +607,8 @@ void shell_loop(int NCPU, int TSLICE){
                                     sem_post(&queue->lock);
 
                                     while(1){
-                                        printf("aunt\n");
+                                        
                                         usleep(1250000);
-                                        printf("Armaan\n");
                                     }
 
                                     exit(0);
