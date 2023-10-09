@@ -606,9 +606,11 @@ void shell_loop(int NCPU, int TSLICE){
                                     queue->active_flag = 1;
                                     sem_post(&queue->lock);
 
-                                    // while(true){
-
-                                    // }
+                                    while(1){
+                                        printf("aunt\n");
+                                        usleep(1250000);
+                                        printf("Armaan\n");
+                                    }
 
                                     exit(0);
                                 }
