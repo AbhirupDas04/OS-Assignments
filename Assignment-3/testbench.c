@@ -104,9 +104,21 @@ void Escape_sequence(int signum){
     if(signum == SIGCHLD){
         int* n = 0;
         int pid = waitpid(-1,n,WCONTINUED);
+        printf("%d\n",pid);
     }
 }
 
+long long timeDEFF(){
+    clock_t diff = end - start;
+    long long msec = (diff * 1000) / CLOCKS_PER_SEC;
+    return msec;
+}
+
 void main(){
-    
+    clock_t startTime = clock();
+    sleep(10);
+    clock_t endTime = clock();
+    long long elapsedTime = timeDifferenceInMillis(startTime, endTime);
+    printf("Time elapsed: %lld milliseconds\n", elapsedTime);
+    return 0;
 }
