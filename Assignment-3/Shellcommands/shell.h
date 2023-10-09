@@ -12,5 +12,6 @@
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <semaphore.h>
 
 void shell_loop(int NCPU, int TSLICE);

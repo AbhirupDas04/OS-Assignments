@@ -1,5 +1,4 @@
 #include "shell.h"
-#include <semaphore.h>
 
 #define PATH_MAX 4096
 
@@ -8,12 +7,14 @@ int curr_idx =0;
 
 typedef struct Process_Queue{
     int n_proc;
+    int list_procs[100];
     sem_t lock;
     int active_flag;
 }Proc_Queue;
 
 Proc_Queue* queue;
 
+int fd_shm;
 char* text = "Shared_Mem";
 
 void Escape_sequence(int signum){
@@ -298,47 +299,6 @@ int launch(char command[30],char arg[50],int mode, int NCPU, int TSLICE){
             exit(0);
         }
 
-        if(!strcmp(command,"submit")){
-            char temp[100];
-            char temp2[100];
-            char* arr_args[100];
-            int n_args = 1;
-
-            trim(arg,temp);
-            if(forward_trim(temp,temp2) == NULL){
-                printf("Incorrect number of arguments to 'submit', has to be at least 1 and max 2!\n");
-                exit(1);
-            }
-            char* temp3 = strtok(temp2," ");
-            arr_args[0] = temp3;
-            while(temp3 != NULL) {
-                temp3 = strtok(NULL," ");
-                arr_args[n_args] = temp3;
-                n_args++;
-            }
-
-            n_args--;
-
-            if(n_args > 2){
-                printf("Too many args to 'Submit'!\n");
-                exit(1);
-            }
-
-            if (access(arr_args[0], F_OK|X_OK) != 0){
-                printf("Not an executable or Executable doesn't exist!\n");
-                exit(1);
-            }
-
-            if(n_args == 1){
-
-            }
-            if(n_args == 2){
-
-            }
-
-            exit(0);
-        }
-
         if(!strcmp(command,"history")){
             char temp[100];
             trim(arg,temp);
@@ -437,9 +397,13 @@ void shell_loop(int NCPU, int TSLICE){
         exit(1);
     }
 
-    int fd_shm = shm_open(text,O_CREAT | O_RDWR, 0777);
-    ftruncate(fd_shm,4096);
-    a = (int*)mmap(NULL,4096,PROT_READ | PROT_WRITE | PROT_EXEC,MAP_SHARED,fd_shm,0);
+    fd_shm = shm_open(text,O_CREAT | O_EXCL | O_RDWR, 0777);
+    ftruncate(fd_shm,sizeof(Proc_Queue));
+    queue = (Proc_Queue*)mmap(NULL,sizeof(Proc_Queue),PROT_READ | PROT_WRITE | PROT_EXEC,MAP_SHARED | MAP_ANONYMOUS,fd_shm,0);
+
+    queue->active_flag = 0;
+    queue->n_proc = 0;
+    sem_init(&queue->lock,1,0);
 
     do{
         char cwd[PATH_MAX];
@@ -560,6 +524,55 @@ void shell_loop(int NCPU, int TSLICE){
                     status = launch(command,arg,2,NCPU,TSLICE);
                 }
                 else{
+                    if(!strcmp(command,"submit")){
+                        char temp[100];
+                        char temp2[100];
+                        char* arr_args[100];
+                        int n_args = 1;
+
+                        trim(arg,temp);
+                        if(forward_trim(temp,temp2) == NULL){
+                            printf("Incorrect number of arguments to 'submit', has to be at least 1 and max 2!\n");
+                            continue;
+                        }
+                        char* temp3 = strtok(temp2," ");
+                        arr_args[0] = temp3;
+                        while(temp3 != NULL) {
+                            temp3 = strtok(NULL," ");
+                            arr_args[n_args] = temp3;
+                            n_args++;
+                        }
+
+                        n_args--;
+
+                        if(n_args > 2){
+                            printf("Too many args to 'Submit'!\n");
+                            continue;
+                        }
+
+                        if (access(arr_args[0], F_OK|X_OK) != 0){
+                            printf("Not an executable or Executable doesn't exist!\n");
+                            continue;
+                        }
+
+                        if(n_args == 1){
+
+                        }
+                        if(n_args == 2){
+
+                        }
+
+                        int status = fork();
+                        if(status < 0){
+                            printf("Fork Failure\n");
+                            continue;
+                        }
+                        else if(status == 0){
+                            
+                        }
+
+                        continue;
+                    }
                     status = launch(command,arg,1,NCPU,TSLICE);
                 }
             }

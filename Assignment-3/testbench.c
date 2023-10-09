@@ -1,5 +1,13 @@
 #include <stdio.h>
 #include <string.h>
+#include <semaphore.h>
+
+typedef struct Process_Queue{
+    int n_proc;
+    int list_procs[100];
+    sem_t lock;
+    int active_flag;
+}Proc_Queue;
 
 char* trim(char* string, char* str){
     int entry_status = 1;
@@ -78,10 +86,5 @@ char* forward_trim(char* string, char* str){
 }
 
 void main(){
-    char* cat = "              a  bc     ";
-    char arr1[50];
-    char arr2[50];
-    trim(cat,arr1);
-    forward_trim(arr1,arr2);
-    printf("%s!!!\n",arr2);
+    printf("%ld",sizeof(Proc_Queue));
 }
