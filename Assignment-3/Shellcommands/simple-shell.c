@@ -1,13 +1,21 @@
 #include "shell.h"
 
 #define PATH_MAX 4096
-
+#define upperLIM 100
 char user_input[100][80];
 int curr_idx =0;
 
+//process struct definition
+typedef struct process{
+    pid_t pid;
+    time_t st_time;
+    time_t end_time; 
+}proc;
+
+
 typedef struct Process_Queue{
     int n_proc;
-    int list_procs[100];
+    proc list_procs[100];
     sem_t lock;
     int active_flag;
 }Proc_Queue;
@@ -381,6 +389,23 @@ int launch(char command[30],char arg[50],int mode, int NCPU, int TSLICE){
     }
 }
 
+void stopAdd(Proc_Queue* queue, pid_t pid){
+    if (kill(pid,SIGSTOP) == -1){
+        perror("kill");
+        return;
+    }
+
+    sem_wait(&queue->lock);
+    if(queue->n_proc < upperLIM){
+        queue->list_procs[queue->n_proc].pid = pid;
+        queue->n_proc++;
+    }
+    sem_post(&queue->lock)
+}
+
+
+
+
 void shell_loop(int NCPU, int TSLICE){
     int status = 1;
     char input[100];
@@ -570,14 +595,13 @@ void shell_loop(int NCPU, int TSLICE){
                                 _exit(0);
                             }
                             else{
-
+                                //edit two
+                                //creating a function for it
+                                stopAdd(queue,getpid());
                                 exit(0);
                             }
                         }
 
-                        sem_wait(&queue->lock);
-                        queue->n_proc++;
-                        sem_post(&queue->lock);
 
                         if(n_args == 1){
 
@@ -605,6 +629,7 @@ void shell_loop(int NCPU, int TSLICE){
                                 if(queue->active_flag == 0){
                                     queue->active_flag = 1;
                                     sem_post(&queue->lock);
+
 
                                     while(1){
                                         
