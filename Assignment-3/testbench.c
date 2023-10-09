@@ -108,11 +108,6 @@ void Escape_sequence(int signum){
     }
 }
 
-long long timeDEFF(){
-    clock_t diff = end - start;
-    long long msec = (diff * 1000) / CLOCKS_PER_SEC;
-    return msec;
-}
 
 void main(){
     /*
