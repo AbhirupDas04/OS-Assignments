@@ -595,14 +595,13 @@ void shell_loop(int NCPU, int TSLICE){
                                 _exit(0);
                             }
                             else{
-
                                 //edit two
                                 //creating a function for it
+                                exec(n_args);
                                 stopAdd(queue,getpid());
                                 exit(0);
                             }
                         }
-
 
                         if(n_args == 1){
 
@@ -631,11 +630,11 @@ void shell_loop(int NCPU, int TSLICE){
                                     queue->active_flag = 1;
                                     sem_post(&queue->lock);
 
-
                                     while(1){
                                         printf("aunt\n");
                                         usleep(1250000);
                                         printf("Armaan\n");
+                                    }
 
                                     exit(0);
                                 }
