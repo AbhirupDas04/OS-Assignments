@@ -108,16 +108,28 @@ void Escape_sequence(int signum){
     }
 }
 
-long long timeDEFF(clock_t start,clock_t end){
-    clock_t diff = end - start;
-    long long msec = (diff * 1000) / CLOCKS_PER_SEC;
-    return msec;
-}
+
 
 void main(){
-    clock_t startTime = clock();
+
+    /*
+    if(signal(SIGCHLD,Escape_sequence) == SIG_ERR){
+        perror("ERROR");
+        exit(1);
+    }
+    int status = fork();
+    if(status == 0){
+        printf("THE AUNT!!!\n");
+        exit(0);
+    }
+    else if (status > 0){
+        printf("angry");
+        wait(NULL);
+        printf("angry");
+    }*/
+    time_t start, end;
+    time(&start);
     sleep(10);
-    clock_t endTime = clock();
-    long long elapsedTime = timeDEFF(startTime, endTime);
-    printf("Time elapsed: %lld milliseconds\n", elapsedTime);
+    time(&end);
+    printf("Time diff = %ld", end - start);
 }
