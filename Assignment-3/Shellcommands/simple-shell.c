@@ -597,11 +597,11 @@ void shell_loop(int NCPU, int TSLICE){
                             else{
                                 //edit two
                                 //creating a function for it
+                                exec(n_args);
                                 stopAdd(queue,getpid());
                                 exit(0);
                             }
                         }
-
 
                         if(n_args == 1){
 
@@ -629,7 +629,6 @@ void shell_loop(int NCPU, int TSLICE){
                                 if(queue->active_flag == 0){
                                     queue->active_flag = 1;
                                     sem_post(&queue->lock);
-
 
                                     while(1){
                                         
