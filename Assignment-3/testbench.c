@@ -108,6 +108,11 @@ void Escape_sequence(int signum){
     }
 }
 
+long long timeDEFF(clock_t start,clock_t end){
+    clock_t diff = end - start;
+    long long msec = (diff * 1000) / CLOCKS_PER_SEC;
+    return msec;
+}
 
 void main(){
     /*
@@ -128,7 +133,6 @@ void main(){
     clock_t startTime = clock();
     sleep(10);
     clock_t endTime = clock();
-    long long elapsedTime = timeDifferenceInMillis(startTime, endTime);
+    long long elapsedTime = timeDEFF(startTime, endTime);
     printf("Time elapsed: %lld milliseconds\n", elapsedTime);
-    return 0;
 }
