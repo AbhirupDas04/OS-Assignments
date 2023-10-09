@@ -400,7 +400,7 @@ void stopAdd(Proc_Queue* queue, pid_t pid){
         queue->list_procs[queue->n_proc].pid = pid;
         queue->n_proc++;
     }
-    sem_post(&queue->lock)
+    sem_post(&queue->lock);
 }
 
 
@@ -632,7 +632,7 @@ void shell_loop(int NCPU, int TSLICE){
 
 
                                     while(1){
-                                        
+
                                         usleep(1250000);
                                     }
 
