@@ -1,5 +1,24 @@
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <time.h>
+#include <sys/time.h>
+#include <features.h>
+#include <signal.h>
+#include <stdlib.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <semaphore.h>
+
+typedef struct Process_Queue{
+    int n_proc;
+    int list_procs[100];
+    sem_t lock;
+    int active_flag;
+}Proc_Queue;
 
 char* trim(char* string, char* str){
     int entry_status = 1;
@@ -77,11 +96,31 @@ char* forward_trim(char* string, char* str){
     return str;
 }
 
+void Escape_sequence(int signum){
+    if(signum == SIGINT){
+        _exit(0);
+    }
+
+    if(signum == SIGCHLD){
+        int* n = 0;
+        int pid = waitpid(-1,n,WCONTINUED);
+        printf("%d\n",pid);
+    }
+}
+
 void main(){
-    char* cat = "              a  bc     ";
-    char arr1[50];
-    char arr2[50];
-    trim(cat,arr1);
-    forward_trim(arr1,arr2);
-    printf("%s!!!\n",arr2);
+    if(signal(SIGCHLD,Escape_sequence) == SIG_ERR){
+        perror("ERROR");
+        exit(1);
+    }
+    int status = fork();
+    if(status == 0){
+        printf("THE AUNT!!!\n");
+        exit(0);
+    }
+    else if (status > 0){
+        printf("angry");
+        wait(NULL);
+        printf("angry");
+    }
 }
