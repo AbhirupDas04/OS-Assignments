@@ -4,7 +4,18 @@
 
 char user_input[100][80];
 int curr_idx =0;
-char exit_sequence[100][2000];
+
+typedef struct Process_Queue{
+    int n_proc;
+    int list_procs[100];
+    sem_t lock;
+    int active_flag;
+}Proc_Queue;
+
+Proc_Queue* queue;
+
+int fd_shm;
+char* text = "Shared_Mem";
 
 void Escape_sequence(int signum){
     if(signum == SIGINT){
@@ -139,7 +150,7 @@ void history(){
     }
 }
 
-int launch(char command[30],char arg[50],int mode){
+int launch(char command[30],char arg[50],int mode, int NCPU, int TSLICE){
     int status = fork();
 
     if(status < 0){
@@ -288,20 +299,6 @@ int launch(char command[30],char arg[50],int mode){
             exit(0);
         }
 
-        if(!strcmp(command,"submit")){
-            char temp[100];
-            char temp2[100];
-            trim(arg,temp);
-            if(forward_trim(temp,temp2) == NULL){
-                printf("Incorrect number of arguments to 'submit', has to be at least 1 and max 2!\n");
-                exit(1);
-            }
-            else{
-            }
-
-            exit(0);
-        }
-
         if(!strcmp(command,"history")){
             char temp[100];
             trim(arg,temp);
@@ -400,15 +397,21 @@ void shell_loop(int NCPU, int TSLICE){
         exit(1);
     }
 
+    fd_shm = shm_open(text,O_CREAT | O_EXCL | O_RDWR, 0777);
+    ftruncate(fd_shm,sizeof(Proc_Queue));
+    queue = (Proc_Queue*)mmap(NULL,sizeof(Proc_Queue),PROT_READ | PROT_WRITE | PROT_EXEC,MAP_SHARED | MAP_ANONYMOUS,fd_shm,0);
+
+    queue->active_flag = 0;
+    queue->n_proc = 0;
+    sem_init(&queue->lock,1,1);
+
     do{
         char cwd[PATH_MAX];
         if(getcwd(cwd,sizeof(cwd)) == NULL){
             perror("ERROR");
             exit(1);
         }
-        magenta("assignment2@shell:");
-        cyan("~");
-        yellow(cwd);
+        magenta("SimpleShell");
         white("$ ");
 
         if(fgets(input,100,stdin) == NULL){
@@ -487,25 +490,21 @@ void shell_loop(int NCPU, int TSLICE){
                             strcpy(arg, "");
                         }
 
-                        char buffer[64], buffer2[64];
-
                         if(flag_bg_detect == 1){
-                            status = launch(command,arg,2);
+                            status = launch(command,arg,2,NCPU,TSLICE);
                         }
                         else{
-                            status = launch(command,arg,1);
+                            status = launch(command,arg,1,NCPU,TSLICE);
                         }
                     }
 
                     else{
-                        char buffer[64], buffer2[64];
-
                         if(flag_bg_detect == 1){
-                            status = launch(input,arg,3);
+                            status = launch(input,arg,3,NCPU,TSLICE);
 
                         }
                         else{
-                            status = launch(input,arg,0);
+                            status = launch(input,arg,0,NCPU,TSLICE);
                         }
                     }
 
@@ -521,25 +520,118 @@ void shell_loop(int NCPU, int TSLICE){
 
             else{
                 curr_idx++;
-                char buffer[64], buffer2[64];
-
                 if(flag_bg_detect == 1){
-                    status = launch(command,arg,2);
+                    status = launch(command,arg,2,NCPU,TSLICE);
                 }
                 else{
-                    status = launch(command,arg,1);
+                    if(!strcmp(command,"submit")){
+                        char temp[100];
+                        char temp2[100];
+                        char* arr_args[100];
+                        int n_args = 1;
+
+                        trim(arg,temp);
+                        if(forward_trim(temp,temp2) == NULL){
+                            printf("Incorrect number of arguments to 'submit', has to be at least 1 and max 2!\n");
+                            continue;
+                        }
+                        char* temp3 = strtok(temp2," ");
+                        arr_args[0] = temp3;
+                        while(temp3 != NULL) {
+                            temp3 = strtok(NULL," ");
+                            arr_args[n_args] = temp3;
+                            n_args++;
+                        }
+
+                        n_args--;
+
+                        if(n_args > 2){
+                            printf("Too many args to 'Submit'!\n");
+                            continue;
+                        }
+
+                        if (access(arr_args[0], F_OK|X_OK) != 0){
+                            printf("Not an executable or Executable doesn't exist!\n");
+                            continue;
+                        }
+
+                        int new_proc_status = fork();
+                        if(new_proc_status < 0){
+                            printf("Fork Failure.\n");
+                            continue;
+                        }
+                        else if (new_proc_status == 0){
+                            int status3 = fork();
+                            if(status3 < 0){
+                                printf("Fork Failure.\n");
+                                continue;
+                            }
+                            else if(status3 > 0){
+                                _exit(0);
+                            }
+                            else{
+                                
+                                exit(0);
+                            }
+                        }
+
+                        sem_wait(&queue->lock);
+                        queue->n_proc++;
+                        sem_post(&queue->lock);
+
+                        if(n_args == 1){
+
+                        }
+                        if(n_args == 2){
+
+                        }
+
+                        int status = fork();
+                        if(status < 0){
+                            printf("Fork Failure\n");
+                            continue;
+                        }
+                        else if(status == 0){
+                            int status2 = fork();
+                            if(status2 < 0){
+                                printf("Fork Failure\n");
+                                continue;
+                            }
+                            else if (status2 > 0){
+                                _exit(0);
+                            }
+                            else{
+                                sem_wait(&queue->lock);
+                                if(queue->active_flag == 0){
+                                    queue->active_flag = 1;
+                                    sem_post(&queue->lock);
+
+                                    while(true){
+
+                                    }
+
+                                    exit(0);
+                                }
+                                else{
+                                    sem_post(&queue->lock);
+                                    exit(0);
+                                }
+                            }
+                        }
+
+                        continue;
+                    }
+                    status = launch(command,arg,1,NCPU,TSLICE);
                 }
             }
         }
         else{
             curr_idx++;
-            char buffer[64], buffer2[64];
-
             if(flag_bg_detect == 1){
-                status = launch(input,arg,3);
+                status = launch(input,arg,3,NCPU,TSLICE);
             }
             else{
-                status = launch(input,arg,0);
+                status = launch(input,arg,0,NCPU,TSLICE);
             }
         }
     }
