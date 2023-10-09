@@ -403,7 +403,7 @@ void shell_loop(int NCPU, int TSLICE){
 
     queue->active_flag = 0;
     queue->n_proc = 0;
-    sem_init(&queue->lock,1,0);
+    sem_init(&queue->lock,1,1);
 
     do{
         char cwd[PATH_MAX];
@@ -555,6 +555,12 @@ void shell_loop(int NCPU, int TSLICE){
                             continue;
                         }
 
+                        printf("cat\n");
+
+                        sem_wait(&queue->lock);
+
+                        sem_post(&queue->lock);
+
                         if(n_args == 1){
 
                         }
@@ -568,7 +574,25 @@ void shell_loop(int NCPU, int TSLICE){
                             continue;
                         }
                         else if(status == 0){
-                            
+                            int status2 = fork();
+                            if(status2 < 0){
+                                printf("Fork Failure\n");
+                                continue;
+                            }
+                            else if (status2 > 0){
+                                _exit(0);
+                            }
+                            else{
+                                sem_wait(&queue->lock);
+                                if(queue->active_flag == 0){
+                                    sem_post(&queue->lock);
+                                    exit(0);
+                                }
+                                else{
+                                    sem_post(&queue->lock);
+                                    exit(0);
+                                }
+                            }
                         }
 
                         continue;
