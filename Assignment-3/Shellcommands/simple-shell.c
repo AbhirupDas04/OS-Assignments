@@ -597,7 +597,7 @@ void shell_loop(int NCPU, int TSLICE){
                             else{
                                 //edit two
                                 //creating a function for it
-                                exec(n_args);
+                                exec(arr_args[0]);
                                 stopAdd(queue,getpid());
                                 exit(0);
                             }
