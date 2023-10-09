@@ -108,7 +108,5 @@ void Escape_sequence(int signum){
 }
 
 void main(){
-    printf("aunt\n");
-    usleep(1250000);
-    printf("Armaan\n");
+    
 }
