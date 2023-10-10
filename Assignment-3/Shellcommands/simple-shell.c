@@ -631,7 +631,7 @@ void shell_loop(int NCPU, int TSLICE){
                                         sem_post(&queue->lock);
                                         usleep(TSLICE*1000);
                                     }
-                                    
+
                                     if(NCPU < queue->n_proc){
                                         temp_var = NCPU;
                                     }
@@ -647,17 +647,24 @@ void shell_loop(int NCPU, int TSLICE){
 
                                     usleep(TSLICE*1000);
 
-                                    // for(int i = 0; i < NCPU; i++){
-                                    //     temp_var++;
+                                    sem_wait(&queue->lock);
+                                    if(queue->n_proc == 0){
+                                        sem_post(&queue->lock);
+                                        continue;
+                                    }
 
-                                    //     sem_wait(&queue->lock);
-                                    //     kill(queue->list_procs[temp_var-1].pid,SIGCONT);
-                                    //     if(temp_var == queue->n_proc){
-                                    //         sem_post(&queue->lock);
-                                    //         break;
-                                    //     }
-                                    //     sem_post(&queue->lock);
-                                    // }
+                                    if(NCPU < queue->n_proc){
+                                        temp_var = NCPU;
+                                    }
+                                    else{
+                                        temp_var = queue->n_proc;
+                                    }
+                                    sem_post(&queue->lock);
+                                    sem_wait(&queue->lock);
+                                    for(int i = 0; i < temp_var; i++){
+                                        kill(queue->list_procs[temp_var-1].pid,SIGSTOP);
+                                    }
+                                    sem_post(&queue->lock);
                                 }
                                 exit(0);
                             }
