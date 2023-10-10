@@ -391,17 +391,17 @@
     }
 
     void stopAdd(Proc_Queue* queue, pid_t pid){
-        if (kill(pid,SIGSTOP) == -1){
-            perror("kill");
-            return;
-        }
-
         sem_wait(&queue->lock);
         if(queue->n_proc < upperLIM){
             queue->list_procs[queue->n_proc].pid = pid;
             queue->n_proc++;
         }
         sem_post(&queue->lock);
+
+        if (kill(pid,SIGSTOP) == -1){
+            perror("kill");
+            return;
+        }
     }
 
 
@@ -663,7 +663,6 @@
                                 }
                                 else{
                                     int temp_var;
-
                                     while(1){
                                         sem_wait(&queue->lock);
                                         if(queue->n_proc == 0){

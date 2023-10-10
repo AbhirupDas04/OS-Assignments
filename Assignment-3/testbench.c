@@ -159,17 +159,18 @@ void timeDEFF()
 }
 
 void main(){
-//     char* args[] = {"./test2",NULL};
+    char* args[] = {"./test2",NULL};
 
-//     int status = fork();
+    int status = fork();
 
-//     if(status == 0){
-//         execvp("./test2",args);
-//     }
-//     else if(status > 0){
-//         int f1 = wait(NULL);
-//         printf("%d",kill(f1,0));
-//     }
+    if(status == 0){
+        printf("%d\n",getpid());
+        execvp("./test2",args);
+    }
+    else if(status > 0){
+        sleep(3);
+        printf("%d",status);
+    }
 
-    timeDEFF();
+    // timeDEFF();
 }
