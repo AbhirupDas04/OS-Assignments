@@ -108,6 +108,40 @@ void Escape_sequence(int signum){
     }
 }
 
+// so dat it doesnt raise any errors at compilation
+typedef struct process{
+    pid_t pid;
+    time_t st_time;
+    time_t end_time; 
+}proc;
+
+
+typedef struct Process_Queue{
+    int n_proc;
+    proc list_procs[100];
+    sem_t lock;
+    int active_flag;
+}Proc_Queue;
+
+//takePut: takes the process at the mentioned index and enqueues tot the queue
+void takePut(Proc_Queue queue,int index,proc[] arr){
+    if(index >= sizeof(arr)|| index<0){
+        printf("invalid index\n");
+        return;
+    }
+    if (queue->n_proc >= sizeof(queue->list_procs) / sizeof(queue->list_procs[0])) {
+        printf("Queue is full\n");
+        return;
+    }
+    proc takenProcess = arr[index];
+    sem_wait(&queue->lock);
+    queue->list_procs[queue->n_proc] = takenProcess;
+    queue->n_proc++;
+    sem_post(&queue->lock);    
+
+}
+
+
 void timeDEFF()
 {
     struct timespec start, end;
@@ -152,4 +186,3 @@ void main(){
     }*/
     timeDEFF();
 }
-
