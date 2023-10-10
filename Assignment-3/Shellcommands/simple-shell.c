@@ -17,7 +17,6 @@ typedef struct Process_Queue{
     int n_proc;
     proc list_procs[100];
     sem_t lock;
-    int active_flag;
 }Proc_Queue;
 
 Proc_Queue* queue;
@@ -423,7 +422,6 @@ void shell_loop(int NCPU, int TSLICE){
     ftruncate(fd_shm,sizeof(Proc_Queue));
     queue = (Proc_Queue*)mmap(NULL,sizeof(Proc_Queue),PROT_READ | PROT_WRITE | PROT_EXEC,MAP_SHARED | MAP_ANONYMOUS,fd_shm,0);
 
-    queue->active_flag = 0;
     queue->n_proc = 0;
     sem_init(&queue->lock,1,1);
 
@@ -621,55 +619,49 @@ void shell_loop(int NCPU, int TSLICE){
                                 continue;
                             }
                             else if (status2 > 0){
-                                _exit(0);
+                                wait(NULL);
+                                exit(0);
                             }
                             else{
-                                sem_wait(&queue->lock);
-                                if(queue->active_flag == 0){
-                                    queue->active_flag = 1;
-                                    sem_post(&queue->lock);
+                                int temp_var;
 
-                                    int temp_var;
-
-                                    while(1){
-                                        sem_wait(&queue->lock);
-                                        if(NCPU < queue->n_proc){
-                                            temp_var = NCPU;
-                                        }
-                                        else{
-                                            temp_var = queue->n_proc;
-                                        }
+                                while(1){
+                                    sem_wait(&queue->lock);
+                                    if(queue->n_proc == 0){
                                         sem_post(&queue->lock);
-                                        sem_wait(&queue->lock);
-                                        for(int i = 0; i < temp_var; i++){
-                                            kill(queue->list_procs[temp_var-1].pid,SIGCONT);
-                                        }
-                                        sem_post(&queue->lock);
-
                                         usleep(TSLICE*1000);
-
-                                        // for(int i = 0; i < NCPU; i++){
-                                        //     temp_var++;
-
-                                        //     sem_wait(&queue->lock);
-                                        //     kill(queue->list_procs[temp_var-1].pid,SIGCONT);
-                                        //     if(temp_var == queue->n_proc){
-                                        //         sem_post(&queue->lock);
-                                        //         break;
-                                        //     }
-                                        //     sem_post(&queue->lock);
-                                        // }
                                     }
-
-                                    exit(0);
-                                }
-                                else{
+                                    
+                                    if(NCPU < queue->n_proc){
+                                        temp_var = NCPU;
+                                    }
+                                    else{
+                                        temp_var = queue->n_proc;
+                                    }
                                     sem_post(&queue->lock);
-                                    exit(0);
+                                    sem_wait(&queue->lock);
+                                    for(int i = 0; i < temp_var; i++){
+                                        kill(queue->list_procs[temp_var-1].pid,SIGCONT);
+                                    }
+                                    sem_post(&queue->lock);
+
+                                    usleep(TSLICE*1000);
+
+                                    // for(int i = 0; i < NCPU; i++){
+                                    //     temp_var++;
+
+                                    //     sem_wait(&queue->lock);
+                                    //     kill(queue->list_procs[temp_var-1].pid,SIGCONT);
+                                    //     if(temp_var == queue->n_proc){
+                                    //         sem_post(&queue->lock);
+                                    //         break;
+                                    //     }
+                                    //     sem_post(&queue->lock);
+                                    // }
                                 }
+                                exit(0);
                             }
                         }
-
                         continue;
                     }
                     status = launch(command,arg,1,NCPU,TSLICE);
