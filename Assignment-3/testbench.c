@@ -168,21 +168,17 @@ void timeDEFF()
 }
 
 void main(){
+//     char* args[] = {"./test2",NULL};
 
-    /*
-    if(signal(SIGCHLD,Escape_sequence) == SIG_ERR){
-        perror("ERROR");
-        exit(1);
-    }
-    int status = fork();
-    if(status == 0){
-        printf("THE AUNT!!!\n");
-        exit(0);
-    }
-    else if (status > 0){
-        printf("angry");
-        wait(NULL);
-        printf("angry");
-    }*/
+//     int status = fork();
+
+//     if(status == 0){
+//         execvp("./test2",args);
+//     }
+//     else if(status > 0){
+//         int f1 = wait(NULL);
+//         printf("%d",kill(f1,0));
+//     }
+
     timeDEFF();
 }
