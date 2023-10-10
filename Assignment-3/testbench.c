@@ -108,7 +108,30 @@ void Escape_sequence(int signum){
     }
 }
 
-
+void timeDEFF()
+{
+    struct timespec start, end;
+    clock_gettime(CLOCK_MONOTONIC, &start);
+    
+    struct timespec sleep_time;
+    sleep_time.tv_sec = 4;
+    sleep_time.tv_nsec = 4 * 100000000;
+    
+    nanosleep(&sleep_time, NULL);
+    
+    clock_gettime(CLOCK_MONOTONIC, &end);
+    
+    long diff_sec = end.tv_sec - start.tv_sec;
+    long diff_nsec = end.tv_nsec - start.tv_nsec;
+    
+    if (diff_nsec < 0)
+    {
+        diff_sec--;
+        diff_nsec += 1000000000;
+    }
+    
+    printf("Time diff = %ld milliseconds\n", (diff_sec * 1000) + (diff_nsec / 1000000));
+}
 
 void main(){
 
@@ -127,9 +150,5 @@ void main(){
         wait(NULL);
         printf("angry");
     }*/
-    time_t start, end;
-    time(&start);
-    sleep(10);
-    time(&end);
-    printf("Time diff = %ld", end - start);
+    timeDEFF();
 }
