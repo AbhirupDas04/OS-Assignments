@@ -108,26 +108,10 @@ void Escape_sequence(int signum){
     }
 }
 
-// long long timeDEFF(){
-//     clock_t diff = end - start;
-//     long long msec = (diff * 1000) / CLOCKS_PER_SEC;
-//     return msec;
-// }
-
 void main(){
-    // clock_t startTime = clock();
-    // sleep(3);
-    // clock_t endTime = clock();
-    // long long elapsedTime = timeDifferenceInMillis(startTime, endTime);
-    // printf("Time elapsed: %lld milliseconds\n", elapsedTime);
-    char* args[] = {"./test2",NULL};
-    int status = fork();
-
-    if(status == 0){
-        execvp("./test2",args);
-    }
-    else if(status > 0){
-        wait(NULL);
-        printf("%d %d\n",status,kill(status,0));
-    }
+    time_t start, end;
+    time(&start);
+    sleep(10);
+    time(&end);
+    printf("Time diff = %ld", end - start);
 }
