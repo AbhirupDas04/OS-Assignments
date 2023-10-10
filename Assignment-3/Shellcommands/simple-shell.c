@@ -16,6 +16,8 @@
     typedef struct Process_Queue{
         int n_proc;
         proc list_procs[100];
+        int d_proc;
+        proc list_del[100];
         sem_t lock;
     }Proc_Queue;
 
@@ -445,6 +447,7 @@
         queue = (Proc_Queue*)mmap(NULL,sizeof(Proc_Queue),PROT_READ | PROT_WRITE | PROT_EXEC,MAP_SHARED | MAP_ANONYMOUS,fd_shm,0);
 
         queue->n_proc = 0;
+        queue->d_proc = 0;
         sem_init(&queue->lock,1,1);
 
         do{
@@ -618,10 +621,12 @@
                                     for (int i = 0; i < queue->n_proc; i++) {
                                         if (queue->list_procs[i].pid == pid) {
                                             // Found the process, remove it by shifting the remaining processes
+                                            queue->list_del[queue->d_proc] = list_procs[i];
                                             for (int j = i; j < queue->n_proc - 1; j++) {
                                                 queue->list_procs[j] = queue->list_procs[j + 1];
                                             }
                                             queue->n_proc--;
+                                            queue->d_proc++;
                                             found = 1;
                                             break;
                                         }
