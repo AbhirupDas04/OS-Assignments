@@ -13,11 +13,17 @@
 #include <fcntl.h>
 #include <semaphore.h>
 
+// so dat it doesnt raise any errors at compilation
+typedef struct process{
+    pid_t pid;
+    time_t st_time;
+    time_t end_time; 
+}proc;
+
 typedef struct Process_Queue{
     int n_proc;
-    int list_procs[100];
+    proc list_procs[100];
     sem_t lock;
-    int active_flag;
 }Proc_Queue;
 
 char* trim(char* string, char* str){
@@ -108,23 +114,8 @@ void Escape_sequence(int signum){
     }
 }
 
-// so dat it doesnt raise any errors at compilation
-typedef struct process{
-    pid_t pid;
-    time_t st_time;
-    time_t end_time; 
-}proc;
-
-
-typedef struct Process_Queue{
-    int n_proc;
-    proc list_procs[100];
-    sem_t lock;
-    int active_flag;
-}Proc_Queue;
-
 //takePut: takes the process at the mentioned index and enqueues tot the queue
-void takePut(Proc_Queue queue,int index,proc[] arr){
+void takePut(Proc_Queue* queue,int index,proc* arr){
     if(index >= sizeof(arr)|| index<0){
         printf("invalid index\n");
         return;
@@ -168,21 +159,17 @@ void timeDEFF()
 }
 
 void main(){
+//     char* args[] = {"./test2",NULL};
 
-    /*
-    if(signal(SIGCHLD,Escape_sequence) == SIG_ERR){
-        perror("ERROR");
-        exit(1);
-    }
-    int status = fork();
-    if(status == 0){
-        printf("THE AUNT!!!\n");
-        exit(0);
-    }
-    else if (status > 0){
-        printf("angry");
-        wait(NULL);
-        printf("angry");
-    }*/
+//     int status = fork();
+
+//     if(status == 0){
+//         execvp("./test2",args);
+//     }
+//     else if(status > 0){
+//         int f1 = wait(NULL);
+//         printf("%d",kill(f1,0));
+//     }
+
     timeDEFF();
 }
