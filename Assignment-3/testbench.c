@@ -114,4 +114,15 @@ void main(){
     sleep(10);
     time(&end);
     printf("Time diff = %ld", end - start);
+    char* args[] = {"./test2",NULL};
+
+    // int status = fork();
+
+    // if(status == 0){
+    //     execvp("./test2",args);
+    // }
+    // else if(status > 0){
+    //     wait(NULL);
+    //     printf("%d %d\n",status,kill(status,0));
+    // }
 }
