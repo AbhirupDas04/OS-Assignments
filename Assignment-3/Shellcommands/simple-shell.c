@@ -403,9 +403,6 @@ void stopAdd(Proc_Queue* queue, pid_t pid){
     sem_post(&queue->lock);
 }
 
-
-
-
 void shell_loop(int NCPU, int TSLICE){
     int status = 1;
     char input[100];
@@ -592,13 +589,16 @@ void shell_loop(int NCPU, int TSLICE){
                                 continue;
                             }
                             else if(status3 > 0){
-                                _exit(0);
+                                int pid = wait(NULL);
+                                sem_wait(&queue->lock);
+                                // for(int i = 0; )
+                                sem_post(&queue->lock);
+                                exit(0);
                             }
                             else{
                                 //creating a function for it
+                                stopAdd(queue,getpid()); 
                                 execl(arr_args[0],NULL);
-                                stopAdd(queue,getpid());
-                                exit(0);
                             }
                         }
 
@@ -629,11 +629,36 @@ void shell_loop(int NCPU, int TSLICE){
                                     queue->active_flag = 1;
                                     sem_post(&queue->lock);
 
+                                    int temp_var;
+
                                     while(1){
-                                        for(int i = 0; i < NCPU; i++){
-                                            
+                                        sem_wait(&queue->lock);
+                                        if(NCPU < queue->n_proc){
+                                            temp_var = NCPU;
                                         }
+                                        else{
+                                            temp_var = queue->n_proc;
+                                        }
+                                        sem_post(&queue->lock);
+                                        sem_wait(&queue->lock);
+                                        for(int i = 0; i < temp_var; i++){
+                                            kill(queue->list_procs[temp_var-1].pid,SIGCONT);
+                                        }
+                                        sem_post(&queue->lock);
+
                                         usleep(TSLICE*1000);
+
+                                        // for(int i = 0; i < NCPU; i++){
+                                        //     temp_var++;
+
+                                        //     sem_wait(&queue->lock);
+                                        //     kill(queue->list_procs[temp_var-1].pid,SIGCONT);
+                                        //     if(temp_var == queue->n_proc){
+                                        //         sem_post(&queue->lock);
+                                        //         break;
+                                        //     }
+                                        //     sem_post(&queue->lock);
+                                        // }
                                     }
 
                                     exit(0);
