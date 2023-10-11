@@ -392,37 +392,40 @@
         }
     }
 
-    void stopAdd(Proc_Queue* queue, pid_t pid){
+    void stopAdd(Proc_Queue* queue1, pid_t pid){
+        sem_wait(&queue1->lock);
+        if(queue1->n_proc < upperLIM){
+            proc* p1 = (proc*)malloc(sizeof(proc));
+            p1->pid = pid;
+            queue1->list_procs[queue->n_proc] = *p1;
+            queue1->n_proc++;
+        }
+        sem_post(&queue1->lock);
+
         if (kill(pid,SIGSTOP) == -1){
             perror("kill");
             return;
         }
-
-        sem_wait(&queue->lock);
-        if(queue->n_proc < upperLIM){
-            queue->list_procs[queue->n_proc].pid = pid;
-            queue->n_proc++;
-        }
-        sem_post(&queue->lock);
     }
 
 
     //takePut: takes the process at the mentioned index and enqueues tot the queue
-    void takePut(Proc_Queue* queue,int index,proc* arr){
-        if(index >= sizeof(arr)|| index<0){
-            printf("invalid index\n");
-            return;
+    void takePut(Proc_Queue* queue1,int index){
+        // if(index >= sizeof(arr)|| index<0){
+        //     printf("invalid index\n");
+        //     return;
+        // }
+        // if (queue->n_proc >= sizeof(queue->list_procs) / sizeof(queue->list_procs[0])) {
+        //     printf("Queue is full\n");
+        //     return;
+        // }
+        // if(queue1->n_proc==2){printf("\n\n%d\n\n",queue1->list_procs[0].pid);}
+        proc takenProcess = queue1->list_procs[index];
+        for(int i = index+1; i < queue1->n_proc; i++){
+            queue1->list_procs[i-1] = queue1->list_procs[i];
         }
-        if (queue->n_proc >= sizeof(queue->list_procs) / sizeof(queue->list_procs[0])) {
-            printf("Queue is full\n");
-            return;
-        }
-        proc takenProcess = arr[index];
-        sem_wait(&queue->lock);
-        queue->list_procs[queue->n_proc] = takenProcess;
-        queue->n_proc++;
-        sem_post(&queue->lock);    
-
+        queue1->list_procs[queue1->n_proc-1] = takenProcess;
+        // if(queue1->n_proc==2){printf("\n\n%d\n\n",queue1->list_procs[0].pid);}
     }
 
 
@@ -588,6 +591,8 @@
                                 n_args++;
                             }
 
+                            // printf("\n\n%s\n\n",arr_args[0]);
+
                             n_args--;
 
                             if(n_args > 2){
@@ -621,7 +626,7 @@
                                     for (int i = 0; i < queue->n_proc; i++) {
                                         if (queue->list_procs[i].pid == pid) {
                                             // Found the process, remove it by shifting the remaining processes
-                                            queue->list_del[queue->d_proc] = list_procs[i];
+                                            queue->list_del[queue->d_proc] = queue->list_procs[i];
                                             for (int j = i; j < queue->n_proc - 1; j++) {
                                                 queue->list_procs[j] = queue->list_procs[j + 1];
                                             }
@@ -652,73 +657,75 @@
                             }
 
                             int status = fork();
-                        if(status < 0){
-                            printf("Fork Failure\n");
-                            continue;
-                        }
-                        else if(status == 0){
-                            int status2 = fork();
-                            if(status2 < 0){
+                            if(status < 0){
                                 printf("Fork Failure\n");
                                 continue;
                             }
-                            else if (status2 > 0){
-                                wait(NULL);
-                                exit(0);
-                            }
-                            else{
-                                int temp_var;
-
-                                while(1){
-                                    sem_wait(&queue->lock);
-                                    if(queue->n_proc == 0){
-                                        sem_post(&queue->lock);
-                                        usleep(TSLICE*1000);
-                                    }
-
-                                    if(NCPU < queue->n_proc){
-                                        temp_var = NCPU;
-                                    }
-                                    else{
-                                        temp_var = queue->n_proc;
-                                    }
-                                    sem_post(&queue->lock);
-                                    sem_wait(&queue->lock);
-                                    for(int i = 0; i < temp_var; i++){
-                                        kill(queue->list_procs[temp_var-1].pid,SIGCONT);
-                                    }
-                                    sem_post(&queue->lock);
-
-                                    usleep(TSLICE*1000);
-
-                                    sem_wait(&queue->lock);
-                                    if(queue->n_proc == 0){
-                                        sem_post(&queue->lock);
-                                        continue;
-                                    }
-
-                                    if(NCPU < queue->n_proc){
-                                        temp_var = NCPU;
-                                    }
-                                    else{
-                                        temp_var = queue->n_proc;
-                                    }
-                                    sem_post(&queue->lock);
-                                    sem_wait(&queue->lock);
-                                    for(int i = 0; i < temp_var; i++){
-                                        kill(queue->list_procs[temp_var-1].pid,SIGSTOP);
-                                    }
-                                    sem_post(&queue->lock);
+                            else if(status == 0){
+                                int status2 = fork();
+                                if(status2 < 0){
+                                    printf("Fork Failure\n");
+                                    continue;
                                 }
-                                exit(0);
+                                else if (status2 > 0){
+                                    wait(NULL);
+                                    exit(0);
+                                }
+                                else{
+                                    int temp_var;
+                                    while(1){
+                                        sem_wait(&queue->lock);
+                                        if(queue->n_proc == 0){
+                                            sem_post(&queue->lock);
+                                            usleep(TSLICE*1000);
+                                        }
+
+                                        if(NCPU < queue->n_proc){
+                                            temp_var = NCPU;
+                                        }
+                                        else{
+                                            temp_var = queue->n_proc;
+                                        }
+                                        sem_post(&queue->lock);
+                                        sem_wait(&queue->lock);
+                                        for(int i = 0; i < temp_var; i++){
+                                            kill(queue->list_procs[temp_var-1].pid,SIGCONT);
+                                        }
+                                        sem_post(&queue->lock);
+
+                                        usleep(TSLICE*1000);
+
+                                        sem_wait(&queue->lock);
+                                        if(queue->n_proc == 0){
+                                            sem_post(&queue->lock);
+                                            continue;
+                                        }
+
+                                        if(NCPU < queue->n_proc){
+                                            temp_var = NCPU;
+                                        }
+                                        else{
+                                            temp_var = queue->n_proc;
+                                        }
+                                        sem_post(&queue->lock);
+                                        sem_wait(&queue->lock);
+                                        for(int i = 0; i < temp_var; i++){
+                                            kill(queue->list_procs[temp_var-1].pid,SIGSTOP);
+                                        }
+                                        for(int i = 0; i < temp_var; i++){
+                                            takePut(queue,i);
+                                        }
+                                        sem_post(&queue->lock);
+                                    }
+                                    exit(0);
+                                }
                             }
+                            continue;
                         }
-                        continue;
+                        status = launch(command,arg,1,NCPU,TSLICE);
                     }
-                    status = launch(command,arg,1,NCPU,TSLICE);
                 }
             }
-        }
             else{
                 curr_idx++;
                 if(flag_bg_detect == 1){

@@ -115,21 +115,20 @@ void Escape_sequence(int signum){
 }
 
 //takePut: takes the process at the mentioned index and enqueues tot the queue
-void takePut(Proc_Queue* queue,int index,proc* arr){
-    if(index >= sizeof(arr)|| index<0){
-        printf("invalid index\n");
-        return;
+void takePut(Proc_Queue* queue1,int index){
+    // if(index >= sizeof(arr)|| index<0){
+    //     printf("invalid index\n");
+    //     return;
+    // }
+    // if (queue->n_proc >= sizeof(queue->list_procs) / sizeof(queue->list_procs[0])) {
+    //     printf("Queue is full\n");
+    //     return;
+    // }
+    proc takenProcess = queue1->list_procs[index];
+    for(int i = index+1; i < queue1->n_proc; i++){
+        queue1->list_procs[i-1] = queue1->list_procs[i];
     }
-    if (queue->n_proc >= sizeof(queue->list_procs) / sizeof(queue->list_procs[0])) {
-        printf("Queue is full\n");
-        return;
-    }
-    proc takenProcess = arr[index];
-    sem_wait(&queue->lock);
-    queue->list_procs[queue->n_proc] = takenProcess;
-    queue->n_proc++;
-    sem_post(&queue->lock);    
-
+    queue1->list_procs[queue1->n_proc] = takenProcess;
 }
 
 
@@ -159,17 +158,29 @@ void timeDEFF()
 }
 
 void main(){
-//     char* args[] = {"./test2",NULL};
+    // char* args[] = {"./test2",NULL};
 
-//     int status = fork();
+    // int status = fork();
 
-//     if(status == 0){
-//         execvp("./test2",args);
-//     }
-//     else if(status > 0){
-//         int f1 = wait(NULL);
-//         printf("%d",kill(f1,0));
-//     }
+    // if(status == 0){
+    //     printf("%d\n",getpid());
+    //     execvp("./test2",args);
+    // }
+    // else if(status > 0){
+    //     sleep(3);
+    //     printf("%d",status);
+    // }
 
-    timeDEFF();
+    // timeDEFF();
+
+    Proc_Queue* p1 = (Proc_Queue*)malloc(sizeof(Proc_Queue));
+    proc* p2 = (proc*)malloc(sizeof(proc));
+    proc* p3 = (proc*)malloc(sizeof(proc));
+    p2->pid = 3;
+    p3->pid = 4;
+    p1 ->list_procs[0] = *p2;
+    p1 ->list_procs[1] = *p3;
+    printf("%d\n",p1->list_procs[0].pid);
+    takePut(p1,0);
+    printf("%d\n",p1->list_procs[1].pid);
 }
