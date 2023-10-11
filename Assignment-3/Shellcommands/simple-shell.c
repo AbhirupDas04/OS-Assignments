@@ -408,21 +408,22 @@
 
 
     //takePut: takes the process at the mentioned index and enqueues tot the queue
-    void takePut(Proc_Queue* queue,int index,proc* arr){
-        if(index >= sizeof(arr)|| index<0){
-            printf("invalid index\n");
-            return;
+    void takePut(Proc_Queue* queue1,int index){
+        // if(index >= sizeof(arr)|| index<0){
+        //     printf("invalid index\n");
+        //     return;
+        // }
+        // if (queue->n_proc >= sizeof(queue->list_procs) / sizeof(queue->list_procs[0])) {
+        //     printf("Queue is full\n");
+        //     return;
+        // }
+        sem_wait(&queue1->lock);
+        proc takenProcess = queue1->list_procs[index];
+        for(int i = index+1; i < queue1->n_proc; i++){
+            queue1->list_procs[i-1] = queue1->list_procs[i];
         }
-        if (queue->n_proc >= sizeof(queue->list_procs) / sizeof(queue->list_procs[0])) {
-            printf("Queue is full\n");
-            return;
-        }
-        proc takenProcess = arr[index];
-        sem_wait(&queue->lock);
-        queue->list_procs[queue->n_proc] = takenProcess;
-        queue->n_proc++;
-        sem_post(&queue->lock);    
-
+        queue1->list_procs[queue1->n_proc] = takenProcess;
+        sem_post(&queue1->lock);
     }
 
 
@@ -621,7 +622,7 @@
                                     for (int i = 0; i < queue->n_proc; i++) {
                                         if (queue->list_procs[i].pid == pid) {
                                             // Found the process, remove it by shifting the remaining processes
-                                            queue->list_del[queue->d_proc] = list_procs[i];
+                                            queue->list_del[queue->d_proc] = queue->list_procs[i];
                                             for (int j = i; j < queue->n_proc - 1; j++) {
                                                 queue->list_procs[j] = queue->list_procs[j + 1];
                                             }
@@ -706,6 +707,9 @@
                                         sem_wait(&queue->lock);
                                         for(int i = 0; i < temp_var; i++){
                                             kill(queue->list_procs[temp_var-1].pid,SIGSTOP);
+                                        }
+                                        for(int i = 0; i < temp_var; i++){
+                                            takePut(queue,i);
                                         }
                                         sem_post(&queue->lock);
                                     }
