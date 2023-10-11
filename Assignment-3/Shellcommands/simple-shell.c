@@ -392,13 +392,15 @@
         }
     }
 
-    void stopAdd(Proc_Queue* queue, pid_t pid){
-        sem_wait(&queue->lock);
-        if(queue->n_proc < upperLIM){
-            queue->list_procs[queue->n_proc].pid = pid;
-            queue->n_proc++;
+    void stopAdd(Proc_Queue* queue1, pid_t pid){
+        sem_wait(&queue1->lock);
+        if(queue1->n_proc < upperLIM){
+            proc* p1 = (proc*)malloc(sizeof(proc));
+            p1->pid = pid;
+            queue1->list_procs[queue->n_proc] = *p1;
+            queue1->n_proc++;
         }
-        sem_post(&queue->lock);
+        sem_post(&queue1->lock);
 
         if (kill(pid,SIGSTOP) == -1){
             perror("kill");
@@ -417,13 +419,13 @@
         //     printf("Queue is full\n");
         //     return;
         // }
-        sem_wait(&queue1->lock);
+        // if(queue1->n_proc==2){printf("\n\n%d\n\n",queue1->list_procs[0].pid);}
         proc takenProcess = queue1->list_procs[index];
         for(int i = index+1; i < queue1->n_proc; i++){
             queue1->list_procs[i-1] = queue1->list_procs[i];
         }
-        queue1->list_procs[queue1->n_proc] = takenProcess;
-        sem_post(&queue1->lock);
+        queue1->list_procs[queue1->n_proc-1] = takenProcess;
+        // if(queue1->n_proc==2){printf("\n\n%d\n\n",queue1->list_procs[0].pid);}
     }
 
 
@@ -588,6 +590,8 @@
                                 arr_args[n_args] = temp3;
                                 n_args++;
                             }
+
+                            // printf("\n\n%s\n\n",arr_args[0]);
 
                             n_args--;
 
