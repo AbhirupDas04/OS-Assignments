@@ -14,6 +14,7 @@
 
 
     typedef struct Process_Queue{
+        int flag;
         int n_proc;
         proc list_procs[100];
         int d_proc;
@@ -419,13 +420,11 @@
         //     printf("Queue is full\n");
         //     return;
         // }
-        // if(queue1->n_proc==2){printf("\n\n%d\n\n",queue1->list_procs[0].pid);}
         proc takenProcess = queue1->list_procs[index];
         for(int i = index+1; i < queue1->n_proc; i++){
             queue1->list_procs[i-1] = queue1->list_procs[i];
         }
         queue1->list_procs[queue1->n_proc-1] = takenProcess;
-        // if(queue1->n_proc==2){printf("\n\n%d\n\n",queue1->list_procs[0].pid);}
     }
 
 
@@ -451,6 +450,7 @@
 
         queue->n_proc = 0;
         queue->d_proc = 0;
+        queue->flag = 0;
         sem_init(&queue->lock,1,1);
 
         do{
@@ -649,76 +649,89 @@
                                 }
                             }
 
-                            if(n_args == 1){
+                            // if(n_args == 1){
 
-                            }
-                            if(n_args == 2){
+                            // }
+                            // if(n_args == 2){
 
-                            }
-
-                            int status = fork();
-                            if(status < 0){
-                                printf("Fork Failure\n");
-                                continue;
-                            }
-                            else if(status == 0){
-                                int status2 = fork();
-                                if(status2 < 0){
+                            // }
+                            sem_wait(&queue->lock);
+                            if(queue->flag==0){
+                                queue->flag = 1;
+                                sem_post(&queue->lock);
+                                int status = fork();
+                                if(status < 0){
                                     printf("Fork Failure\n");
                                     continue;
                                 }
-                                else if (status2 > 0){
-                                    wait(NULL);
-                                    exit(0);
-                                }
-                                else{
-                                    int temp_var;
-                                    while(1){
-                                        sem_wait(&queue->lock);
-                                        if(queue->n_proc == 0){
-                                            sem_post(&queue->lock);
-                                            usleep(TSLICE*1000);
-                                        }
-
-                                        if(NCPU < queue->n_proc){
-                                            temp_var = NCPU;
-                                        }
-                                        else{
-                                            temp_var = queue->n_proc;
-                                        }
-                                        sem_post(&queue->lock);
-                                        sem_wait(&queue->lock);
-                                        for(int i = 0; i < temp_var; i++){
-                                            kill(queue->list_procs[temp_var-1].pid,SIGCONT);
-                                        }
-                                        sem_post(&queue->lock);
-
-                                        usleep(TSLICE*1000);
-
-                                        sem_wait(&queue->lock);
-                                        if(queue->n_proc == 0){
-                                            sem_post(&queue->lock);
-                                            continue;
-                                        }
-
-                                        if(NCPU < queue->n_proc){
-                                            temp_var = NCPU;
-                                        }
-                                        else{
-                                            temp_var = queue->n_proc;
-                                        }
-                                        sem_post(&queue->lock);
-                                        sem_wait(&queue->lock);
-                                        for(int i = 0; i < temp_var; i++){
-                                            kill(queue->list_procs[temp_var-1].pid,SIGSTOP);
-                                        }
-                                        for(int i = 0; i < temp_var; i++){
-                                            takePut(queue,i);
-                                        }
-                                        sem_post(&queue->lock);
+                                else if(status == 0){
+                                    int status2 = fork();
+                                    if(status2 < 0){
+                                        printf("Fork Failure\n");
+                                        continue;
                                     }
-                                    exit(0);
+                                    else if (status2 > 0){
+                                        wait(NULL);
+                                        exit(0);
+                                    }
+                                    else{
+                                        int temp_var;
+                                        while(1){
+                                            sem_wait(&queue->lock);
+                                            if(queue->n_proc == 0){
+                                                sem_post(&queue->lock);
+                                                usleep(TSLICE*1000);
+                                            }
+
+                                            if(NCPU < queue->n_proc){
+                                                temp_var = NCPU;
+                                            }
+                                            else{
+                                                temp_var = queue->n_proc;
+                                            }
+                                            sem_post(&queue->lock);
+                                            sem_wait(&queue->lock);
+                                            for(int i = 0; i < temp_var; i++){
+                                                kill(queue->list_procs[i].pid,SIGCONT);
+                                            }
+                                            sem_post(&queue->lock);
+
+                                            usleep(TSLICE*1000);
+
+                                            sem_wait(&queue->lock);
+                                            if(queue->n_proc == 0){
+                                                sem_post(&queue->lock);
+                                                continue;
+                                            }
+
+                                            if(NCPU < queue->n_proc){
+                                                temp_var = NCPU;
+                                            }
+                                            else{
+                                                temp_var = queue->n_proc;
+                                            }
+                                            sem_post(&queue->lock);
+                                            sem_wait(&queue->lock);
+                                            for(int i = 0; i < temp_var; i++){
+                                                kill(queue->list_procs[i].pid,SIGSTOP);
+                                            }
+                                            for(int i = 0; i < temp_var; i++){
+                                                takePut(queue,i);
+                                            }
+                                            sem_post(&queue->lock);
+
+                                            // printf("%d\n\n",queue->n_proc);
+
+                                            // if(queue->n_proc == 2){
+                                            //     printf("%d %d",queue->list_procs[0].pid,queue->list_procs[1].pid);
+                                            // }
+                                        }
+                                        exit(0);
+                                    }
                                 }
+                            }
+                            else{
+                                sem_post(&queue->lock);
                             }
                             continue;
                         }

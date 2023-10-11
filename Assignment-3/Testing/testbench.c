@@ -128,7 +128,7 @@ void takePut(Proc_Queue* queue1,int index){
     for(int i = index+1; i < queue1->n_proc; i++){
         queue1->list_procs[i-1] = queue1->list_procs[i];
     }
-    queue1->list_procs[queue1->n_proc] = takenProcess;
+    queue1->list_procs[queue1->n_proc-1] = takenProcess;
 }
 
 
@@ -158,29 +158,29 @@ void timeDEFF()
 }
 
 void main(){
-    // char* args[] = {"./test2",NULL};
+    char* args[] = {"./test2",NULL};
 
-    // int status = fork();
+    int status = fork();
 
-    // if(status == 0){
-    //     printf("%d\n",getpid());
-    //     execvp("./test2",args);
-    // }
-    // else if(status > 0){
-    //     sleep(3);
-    //     printf("%d",status);
-    // }
+    if(status == 0){
+        execvp("./test2",args);
+    }
+    else if(status > 0){
+        kill(status,SIGSTOP);
+        sleep(5);
+        kill(status,SIGCONT);
+    }
 
     // timeDEFF();
 
-    Proc_Queue* p1 = (Proc_Queue*)malloc(sizeof(Proc_Queue));
-    proc* p2 = (proc*)malloc(sizeof(proc));
-    proc* p3 = (proc*)malloc(sizeof(proc));
-    p2->pid = 3;
-    p3->pid = 4;
-    p1 ->list_procs[0] = *p2;
-    p1 ->list_procs[1] = *p3;
-    printf("%d\n",p1->list_procs[0].pid);
-    takePut(p1,0);
-    printf("%d\n",p1->list_procs[1].pid);
+    // Proc_Queue* p1 = (Proc_Queue*)malloc(sizeof(Proc_Queue));
+    // proc* p2 = (proc*)malloc(sizeof(proc));
+    // proc* p3 = (proc*)malloc(sizeof(proc));
+    // p2->pid = 3;
+    // p3->pid = 4;
+    // p1 ->list_procs[0] = *p2;
+    // p1 ->list_procs[1] = *p3;
+    // printf("%d\n",p1->list_procs[0].pid);
+    // takePut(p1,0);
+    // printf("%d\n",p1->list_procs[1].pid);
 }
