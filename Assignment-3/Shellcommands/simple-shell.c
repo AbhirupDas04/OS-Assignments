@@ -162,7 +162,7 @@
         }
     }
 
-    int launch(char command[30],char arg[50],int mode, int NCPU, int TSLICE){
+    int launch(char command[30],char arg[50],int mode){
         int status = fork();
 
         if(status < 0){
@@ -539,20 +539,20 @@
                             }
 
                             if(flag_bg_detect == 1){
-                                status = launch(command,arg,2,NCPU,TSLICE);
+                                status = launch(command,arg,2);
                             }
                             else{
-                                status = launch(command,arg,1,NCPU,TSLICE);
+                                status = launch(command,arg,1);
                             }
                         }
 
                         else{
                             if(flag_bg_detect == 1){
-                                status = launch(input,arg,3,NCPU,TSLICE);
+                                status = launch(input,arg,3);
 
                             }
                             else{
-                                status = launch(input,arg,0,NCPU,TSLICE);
+                                status = launch(input,arg,0);
                             }
                         }
 
@@ -569,7 +569,7 @@
                 else{
                     curr_idx++;
                     if(flag_bg_detect == 1){
-                        status = launch(command,arg,2,NCPU,TSLICE);
+                        status = launch(command,arg,2);
                     }
                     else{
                         if(!strcmp(command,"submit")){
@@ -735,17 +735,17 @@
                             }
                             continue;
                         }
-                        status = launch(command,arg,1,NCPU,TSLICE);
+                        status = launch(command,arg,1);
                     }
                 }
             }
             else{
                 curr_idx++;
                 if(flag_bg_detect == 1){
-                    status = launch(input,arg,3,NCPU,TSLICE);
+                    status = launch(input,arg,3);
                 }
                 else{
-                    status = launch(input,arg,0,NCPU,TSLICE);
+                    status = launch(input,arg,0);
                 }
             }
         }
