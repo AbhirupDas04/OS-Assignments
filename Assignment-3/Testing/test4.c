@@ -4,7 +4,7 @@
 void main(){
     int i = 0;
     while(1){
-        printf("%d) Armaan\n",i);
+        printf("%d) singh\n",i);
         sleep(1);
         i++;
     }
