@@ -130,7 +130,10 @@ void takePut(Proc_Queue* queue1,int index){
     }
     queue1->list_procs[queue1->n_proc] = takenProcess;
 }
-
+void formatTime(struct timespec t, char* buffer, size_t bufferSize) {
+    long ms = t.tv_nsec / 1000000;
+    snprintf(buffer, bufferSize, "%02ld:%02ld:%02ld.%03ld:%09ld", t.tv_sec / 3600, (t.tv_sec % 3600) / 60, t.tv_sec % 60, ms, t.tv_nsec);
+}
 
 void timeDEFF()
 {
@@ -154,13 +157,11 @@ void timeDEFF()
         diff_nsec += 1000000000;
     }
     char start_time_str[30], end_time_str[30];
-    long ms = start.tv_nsec / 1000000;
-    snprintf(start_time_str, sizeof(start_time_str), "%02ld:%02ld:%02ld.%03ld:%09ld", start.tv_sec / 3600, (start.tv_sec % 3600) / 60, start.tv_sec % 60, ms, start.tv_nsec);
-    ms = end.tv_nsec / 1000000;
-    snprintf(end_time_str, sizeof(end_time_str), "%02ld:%02ld:%02ld.%03ld:%09ld", end.tv_sec / 3600, (end.tv_sec % 3600) / 60, end.tv_sec % 60, ms, end.tv_nsec);
-    printf("Start time: %s\n", start_time_str);
-    printf("End time: %s\n", end_time_str);
-    printf("Time diff = %ld milliseconds\n", (diff_sec * 1000) + (diff_nsec / 1000000));
+    strftime(start_time_str,sizeof(start_time_str),"%Y-%m-%d %H:%M:%S",localtime(&start.tv_sec));
+    strftime(end_time_str,sizeof(end_time_str),"%Y-%m-%d %H:%M:%S",localtime(&end.tv_sec));
+    printf("Start time: %s.%09ld\n", start_time_str,start.tv_nsec);
+    printf("End time: %s.%09ld\n", end_time_str,end.tv_nsec);
+    printf("Time diff = %ld milliseconds %09ld nanoseconds\n", diff_sec, diff_nsec);
 }
 
 void main(){
