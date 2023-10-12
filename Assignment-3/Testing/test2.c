@@ -3,7 +3,6 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
-#include "Colors/color.h"
 #include <time.h>
 #include <sys/time.h>
 #include <features.h>
@@ -15,6 +14,6 @@
 #include <semaphore.h>
 
 void main(){
-    sleep(5);
+    sleep(1);
     printf("aunt");
 }
