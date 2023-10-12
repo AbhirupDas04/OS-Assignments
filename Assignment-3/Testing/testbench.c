@@ -156,7 +156,7 @@ void timeDEFF() {
 
     printf("Start time: %s.%09ld\n", start_time_str, start.tv_nsec);
     printf("End time: %s.%09ld\n", end_time_str, end.tv_nsec);
-    printf("Time diff = %.6lf milliseconds\n", diff_ms);}
+    printf("Time diff = %.3lf milliseconds\n", diff_ms);}
 void main(){
     // char* args[] = {"./test2",NULL};
 
