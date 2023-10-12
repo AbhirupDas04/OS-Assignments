@@ -137,9 +137,10 @@ void formatTime(struct timespec t, char* buffer, size_t bufferSize) {
 
 void timeDEFF()
 {
+    time_t start_time, end_time;
     struct timespec start, end;
     clock_gettime(CLOCK_MONOTONIC, &start);
-    
+    start_time = time(NULL);
     struct timespec sleep_time;
     sleep_time.tv_sec = 4;
     sleep_time.tv_nsec = 4 * 100000000;
@@ -147,7 +148,7 @@ void timeDEFF()
     nanosleep(&sleep_time, NULL);
     
     clock_gettime(CLOCK_MONOTONIC, &end);
-    
+    end_time = time(NULL);
     long diff_sec = end.tv_sec - start.tv_sec;
     long diff_nsec = end.tv_nsec - start.tv_nsec;
     
@@ -157,8 +158,8 @@ void timeDEFF()
         diff_nsec += 1000000000;
     }
     char start_time_str[30], end_time_str[30];
-    strftime(start_time_str,sizeof(start_time_str),"%Y-%m-%d %H:%M:%S",localtime(&start.tv_sec));
-    strftime(end_time_str,sizeof(end_time_str),"%Y-%m-%d %H:%M:%S",localtime(&end.tv_sec));
+    strftime(start_time_str,sizeof(start_time_str),"%Y-%m-%d %H:%M:%S",localtime(&start_time));
+    strftime(end_time_str,sizeof(end_time_str),"%Y-%m-%d %H:%M:%S",localtime(&end_time));
     printf("Start time: %s.%09ld\n", start_time_str,start.tv_nsec);
     printf("End time: %s.%09ld\n", end_time_str,end.tv_nsec);
     printf("Time diff = %ld milliseconds %09ld nanoseconds\n", diff_sec, diff_nsec);
