@@ -153,8 +153,13 @@ void timeDEFF()
         diff_sec--;
         diff_nsec += 1000000000;
     }
-    printf("Start time: %lld.%09ld\n", (long long)start.tv_sec, start.tv_nsec);
-    printf("End time: %lld.%09ld\n", (long long)end.tv_sec,end.tv_nsec);
+    char start_time_str[30], end_time_str[30];
+    long ms = start.tv_nsec / 1000000;
+    snprintf(start_time_str, sizeof(start_time_str), "%02ld:%02ld:%02ld.%03ld:%09ld", start.tv_sec / 3600, (start.tv_sec % 3600) / 60, start.tv_sec % 60, ms, start.tv_nsec);
+    ms = end.tv_nsec / 1000000;
+    snprintf(end_time_str, sizeof(end_time_str), "%02ld:%02ld:%02ld.%03ld:%09ld", end.tv_sec / 3600, (end.tv_sec % 3600) / 60, end.tv_sec % 60, ms, end.tv_nsec);
+    printf("Start time: %s\n", start_time_str);
+    printf("End time: %s\n", end_time_str);
     printf("Time diff = %ld milliseconds\n", (diff_sec * 1000) + (diff_nsec / 1000000));
 }
 
