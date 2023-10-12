@@ -162,7 +162,7 @@ void timeDEFF()
     strftime(end_time_str,sizeof(end_time_str),"%Y-%m-%d %H:%M:%S",localtime(&end_time));
     printf("Start time: %s.%09ld\n", start_time_str,start.tv_nsec);
     printf("End time: %s.%09ld\n", end_time_str,end.tv_nsec);
-    printf("Time diff = %ld milliseconds %09ld nanoseconds\n", diff_sec, diff_nsec);
+    printf("Time diff = %ld milliseconds\n", (diff_sec*1000)+( diff_nsec/1000000));
 }
 
 void main(){
