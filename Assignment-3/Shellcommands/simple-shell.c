@@ -412,14 +412,6 @@
 
     //takePut: takes the process at the mentioned index and enqueues tot the queue
     void takePut(Proc_Queue* queue1,int index){
-        // if(index >= sizeof(arr)|| index<0){
-        //     printf("invalid index\n");
-        //     return;
-        // }
-        // if (queue->n_proc >= sizeof(queue->list_procs) / sizeof(queue->list_procs[0])) {
-        //     printf("Queue is full\n");
-        //     return;
-        // }
         proc takenProcess = queue1->list_procs[index];
         for(int i = index+1; i < queue1->n_proc; i++){
             queue1->list_procs[i-1] = queue1->list_procs[i];
