@@ -10,8 +10,6 @@ typedef struct process{
     pid_t pid;
 
     int killed;
-    int executing;
-    int waiting;
 
     struct timespec st_time;
     struct timespec end_time;
@@ -417,8 +415,6 @@ void stopAdd(Proc_Queue* queue1, pid_t pid){
     p1->execution_time = 0;
     p1->last_time = start;
     p1->killed = 0;
-    p1->waiting = 1;
-    p1->executing = 0;
 
     sem_wait(&queue1->lock);
     if(queue1->n_proc < 100){
@@ -654,8 +650,8 @@ void shell_loop(int NCPU, int TSLICE){
                                         queue->list_procs[i].last_time = temp;
                                         queue->list_procs[i].execution_time += diff_ms;
                                         queue->list_procs[i].killed = 1;
-                                        queue->list_procs[i].executing = 0;
-                                        queue->list_procs[i].waiting = 0;
+
+                                        //here, lies the grave of harry maguire
 
                                         queue->list_del[queue->d_proc] = queue->list_procs[i];
                                         for (int j = i; j < queue->n_proc - 1; j++) {
@@ -733,8 +729,6 @@ void shell_loop(int NCPU, int TSLICE){
                                             diff_ms = (double)diff_ns / 1000000.0;
                                             queue->list_procs[i].total_waiting_time += diff_ms;
                                             queue->list_procs[i].last_time = temp;
-                                            queue->list_procs[i].executing = 1;
-                                            queue->list_procs[i].waiting = 0;
 
                                             kill(queue->list_procs[i].pid,SIGCONT);
                                         }
@@ -765,8 +759,6 @@ void shell_loop(int NCPU, int TSLICE){
                                                 diff_ms = (double)diff_ns / 1000000.0;
                                                 queue->list_procs[i].execution_time += diff_ms;
                                                 queue->list_procs[i].last_time = temp;
-                                                queue->list_procs[i].executing = 0;
-                                                queue->list_procs[i].waiting = 1;
                                             }
                                         }
                                         for(int i = 0; i < temp_var; i++){
