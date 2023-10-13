@@ -120,7 +120,7 @@ void takePut(Proc_Queue* queue1,int index){
     for(int i = index+1; i < queue1->n_proc; i++){
         queue1->list_procs[i-1] = queue1->list_procs[i];
     }
-    queue1->list_procs[queue1->n_proc-1] = takenProcess;
+    queue1->list_procs[queue1->n_proc] = takenProcess;
 }
 
 void formatTime(struct timespec t, char* buffer, size_t bufferSize) {
@@ -129,7 +129,9 @@ void formatTime(struct timespec t, char* buffer, size_t bufferSize) {
 }
 
 
+
 void timeDEFF(){
+
     struct timespec start, end;
     clock_gettime(CLOCK_REALTIME, &start);
 
@@ -138,6 +140,7 @@ void timeDEFF(){
     sleep_time.tv_nsec = 4 * 100000000;
 
     nanosleep(&sleep_time, NULL);
+
 
     clock_gettime(CLOCK_REALTIME, &end);
 
@@ -153,6 +156,7 @@ void timeDEFF(){
     printf("End time: %s.%09ld\n", end_time_str, end.tv_nsec);
     printf("Time diff = %.3lf milliseconds\n", diff_ms);
 }
+
 
 void main(){
     // char* args[] = {"./test2",NULL};
@@ -178,7 +182,7 @@ void main(){
     // printf("%d\n",p1->list_procs[0].pid);
     // takePut(p1,0);
     // printf("%d\n",p1->list_procs[1].pid);
-
+    /*
         struct timespec start, end;
     clock_gettime(CLOCK_REALTIME, &start);
 
@@ -200,5 +204,7 @@ void main(){
 
     printf("Start time: %s.%09ld\n", start_time_str, start.tv_nsec);
     printf("End time: %s.%09ld\n", end_time_str, end.tv_nsec);
-    printf("Time diff = %.3lf milliseconds\n", diff_ms);
+    printf("Time diff = %.3lf milliseconds\n", diff_ms);*/
+  timeDEFF();
+
 }
