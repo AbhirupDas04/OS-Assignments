@@ -40,27 +40,20 @@ char* text = "Shared_Mem";
 
 
 
-void Escape_sequence(int signum){
-    
-    if(signum == SIGINT){
-        int i=0;
-        write(1,"\n",1);
-        while (queue->exit_Sequence[i]) {
-            char* details = queue->exit_Sequence[i];
-            int len = strlen(details);
-            for (int j = 0; j < len; j++) {
-                write(1, &queue->exit_Sequence[i][j], 1);
+void Escape_sequence(int signum) {
+    if (signum == SIGINT) {
+        write(1, "\n", 1);
+        // Print exit sequences if available
+        for (int i = 0; i < queue->e_proc; i++) {
+            const char* exit_sequence = queue->exit_Sequence[i];
+            if (exit_sequence != NULL) {
+                write(1, exit_sequence, strlen(exit_sequence));
             }
-            i++;
-        } 
-        _exit(0);
-    }
-
-    if(signum == SIGCHLD){
-        int* n = 0;
-        waitpid(-1,n,WNOHANG);
+        }
+        _exit(0);  // Terminate the process in a signal-safe manner
     }
 }
+
 
 char* trim(char* string, char* str){
     int entry_status = 1;
