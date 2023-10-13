@@ -23,10 +23,10 @@ typedef struct process{
 
 typedef struct Process_Queue{
     int flag;
-
+    int e_proc;
     int n_proc;
     int d_proc;
-
+    char* exit_Sequence[100];
     proc list_procs[100];
     proc list_del[100];
 
@@ -41,7 +41,18 @@ char* text = "Shared_Mem";
 
 
 void Escape_sequence(int signum){
+    
     if(signum == SIGINT){
+        int i=0;
+        write(1,"\n",1);
+        while (queue->exit_Sequence[i]) {
+            char* details = queue->exit_Sequence[i];
+            int len = strlen(details);
+            for (int j = 0; j < len; j++) {
+                write(1, &queue->exit_Sequence[i][j], 1);
+            }
+            i++;
+        } 
         _exit(0);
     }
 
@@ -164,12 +175,15 @@ new_str[i] = '\0';
 }
 
 void history(){
-    int i=0;
-    while(strncmp(user_input[i],"\0", strlen(user_input[i]))){
-        printf("%d. ", i+1);
-        cyan(user_input[i]);
-        printf("\n");
-        i++;
+    if(queue->n_proc > 0){
+        return;
+    }
+    for (int i = 0; i < queue->d_proc; i++) {
+        proc process = queue->list_del[i];
+        printf("Process %d:\n", i);
+        printf("PID: %d\n", process.pid);
+        printf("Execution Time: %f\n", process.execution_time);
+        printf("Total Waiting Time: %f\n",process.total_waiting_time);
     }
 }
 
@@ -439,7 +453,21 @@ void takePut(Proc_Queue* queue1,int index){
     queue1->list_procs[queue1->n_proc-1] = takenProcess;
 }
 
+char* strProc(struct process* process) {
+    char* processDetails = (char*)malloc(2000 * sizeof(char)); // Adjust the buffer size as needed
+    if (processDetails == NULL) {
+        perror("Malloc failed!");
+        exit(EXIT_FAILURE);
+    }
 
+    // Format and append the process details to the processDetails string
+    int totalLength = 0;
+    totalLength += sprintf(processDetails + totalLength, "PID: %d\n", process->pid);
+    totalLength += sprintf(processDetails + totalLength, "Execution Time: %f\n", process->execution_time);
+    totalLength += sprintf(processDetails + totalLength, "Total Waiting Time: %f\n", process->total_waiting_time);
+
+    return processDetails;
+}
 void shell_loop(int NCPU, int TSLICE){
     int status = 1;
     char input[100];
@@ -462,6 +490,7 @@ void shell_loop(int NCPU, int TSLICE){
 
     queue->n_proc = 0;
     queue->d_proc = 0;
+    queue->e_proc = 0;
     queue->flag = 0;
     sem_init(&queue->lock,1,1);
 
@@ -651,7 +680,10 @@ void shell_loop(int NCPU, int TSLICE){
                                         queue->list_procs[i].execution_time += diff_ms;
                                         queue->list_procs[i].killed = 1;
 
-                                        //here, lies the grave of harry maguire
+                                        char* processDetails = strProc(&queue->list_procs[i]);
+                                        strcpy(queue->exit_Sequence[queue->e_proc], processDetails);
+                                        printf("%s/n",processDetails);
+                                        free(processDetails);
 
                                         queue->list_del[queue->d_proc] = queue->list_procs[i];
                                         for (int j = i; j < queue->n_proc - 1; j++) {
@@ -659,6 +691,7 @@ void shell_loop(int NCPU, int TSLICE){
                                         }
                                         queue->n_proc--;
                                         queue->d_proc++;
+                                        queue->e_proc++;
                                         found = 1;
                                         break;
                                     }
