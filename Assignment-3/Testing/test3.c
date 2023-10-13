@@ -5,7 +5,6 @@ void main(){
     int i = 0;
     while(1){
         printf("%d) Armaan\n",i);
-        sleep(4);
         i++;
     }
 }
