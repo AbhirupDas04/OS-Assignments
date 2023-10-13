@@ -460,7 +460,6 @@ void stopAdd(Proc_Queue* queue1, pid_t pid,char* name){
     }
 }
 
-
 //takePut: takes the process at the mentioned index and enqueues tot the queue
 void takePut(Proc_Queue* queue1,int index){
     proc takenProcess = queue1->list_procs[index];
@@ -726,12 +725,6 @@ void shell_loop(int NCPU, int TSLICE){
                             }
                         }
 
-                        // if(n_args == 1){
-
-                        // }
-                        // if(n_args == 2){
-
-                        // }
                         sem_wait(&queue->lock);
                         if(queue->flag==0){
                             queue->flag = 1;
@@ -818,7 +811,7 @@ void shell_loop(int NCPU, int TSLICE){
                                             }
                                         }
                                         for(int i = 0; i < temp_var; i++){
-                                            takePut(queue,i);
+                                            takePut(queue,0);
                                         }
                                         sem_post(&queue->lock);
                                     }
@@ -841,7 +834,7 @@ void shell_loop(int NCPU, int TSLICE){
                 status = launch(input,arg,3);
             }
             else{
-                status = launch(input,arg,0); 
+                status = launch(input,arg,0);
             }
         }
     }
