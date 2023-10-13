@@ -8,8 +8,9 @@ int curr_idx =0;
 //process struct definition
 typedef struct process{
     pid_t pid;
-    char* name;
+    
     int killed;
+    int running;
 
     struct timespec st_time;
     struct timespec end_time;
@@ -18,15 +19,22 @@ typedef struct process{
 
     double execution_time;
     double total_waiting_time;
+
+    char name[20];
 }proc;
 
 
 typedef struct Process_Queue{
     int flag;
+
     int e_proc;
     int n_proc;
     int d_proc;
-    char* exit_Sequence[1000][1000];
+
+    int scheduler_pid;
+    int scheduler_parent_pid;
+
+    char exit_Sequence[1000][1000];
     proc list_procs[100];
     proc list_del[100];
 
@@ -38,22 +46,30 @@ Proc_Queue* queue;
 int fd_shm;
 char* text = "Shared_Mem";
 
-
-
 void Escape_sequence(int signum){
-    
     if(signum == SIGINT){
-        int i=0;
-        write(1,"\n",1);
-        while (queue->exit_Sequence[i]) {
-            char* details = queue->exit_Sequence[i];
-            int len = strlen(details);
-            for (int j = 0; j < len; j++) {
-                write(1, &queue->exit_Sequence[i][j], 1);
+        if(queue->n_proc != 0){
+            return;
+        }
+        else{
+            kill(queue->scheduler_parent_pid,SIGTERM);
+            kill(queue->scheduler_pid,SIGTERM);
+
+            int i=0;
+            if(write(1,"\n",1) == -1){
+                _exit(1);
             }
-            i++;
-        } 
-        _exit(0);
+            while(strncmp(queue->exit_Sequence[i],"\0", strlen(queue->exit_Sequence[i]))){
+                int len = strlen(queue->exit_Sequence[i]);
+                for (int j = 0; j < len; j++) {
+                    if(write(1, &queue->exit_Sequence[i][j], 1) == -1){
+                        _exit(1);
+                    }
+                }
+                i++;
+            }
+            _exit(0);
+        }
     }
 
     if(signum == SIGCHLD){
@@ -139,56 +155,48 @@ char* forward_trim(char* string, char* str){
 }
 
 int lastBack(char* string){
-int len = (int)strlen(string);
-for(int i = len-1; i >=0; i--){
-    if(string[i] == ' ' || string[i] == '\t' || string[i] == '\n'){
-    continue;
+    int len = (int)strlen(string);
+    for(int i = len-1; i >=0; i--){
+        if(string[i] == ' ' || string[i] == '\t' || string[i] == '\n'){
+        continue;
+        }
+        else if(string[i] == '&'){
+        return 1;
+        }
+        else{
+        return 0;
+        }
     }
-    else if(string[i] == '&'){
-    return 1;
-    }
-    else{
     return 0;
-    }
-}
-return 0;
 }
 
 void remAmp(char* old_str, char* new_str){
-int pos;
+    int pos;
 
-int len = (int)strlen(old_str);
-for(int i = len-1; i >=0; i--){
-    if(old_str[i] == '&'){
-    pos = i;
-    break;
-    }
-}
-
-int i;
-
-for(i = 0; i < pos; i++){
-    new_str[i] = old_str[i];
-}
-
-new_str[i] = '\0';
-}
-
-void history() {
-    if (queue->n_proc > 0) {
-        printf("l");
-        return;
+    int len = (int)strlen(old_str);
+    for(int i = len-1; i >=0; i--){
+        if(old_str[i] == '&'){
+        pos = i;
+        break;
+        }
     }
 
-    printf("History of Terminated Processes:\n");
+    int i;
 
-    for (int i = 0; i < queue->d_proc; i++) {
-        proc process = queue->list_del[i];
-        printf("Process Name: %s\n", process.name);
-        printf("PID: %d\n", process.pid);
-        printf("Execution Time: %.2f ms\n", process.execution_time);
-        printf("Total Waiting Time: %.2f ms\n", process.total_waiting_time);
-        printf("--------------------------------------------------\n");
+    for(i = 0; i < pos; i++){
+        new_str[i] = old_str[i];
+    }
+
+    new_str[i] = '\0';
+}
+
+void history(){
+    int i=0;
+    while(strncmp(user_input[i],"\0", strlen(user_input[i]))){
+        printf("%d. ", i+1);
+        cyan(user_input[i]);
+        printf("\n");
+        i++;
     }
 }
 
@@ -428,13 +436,16 @@ void stopAdd(Proc_Queue* queue1, pid_t pid,char* name){
     clock_gettime(CLOCK_REALTIME, &start);
 
     proc* p1 = (proc*)malloc(sizeof(proc));
-    p1->name = name;
+    for(int i = 0; i < (int)strlen(name); i++){
+        p1->name[i] = name[i];
+    }
     p1->pid = pid;
     p1->st_time = start;
     p1->total_waiting_time = 0;
     p1->execution_time = 0;
     p1->last_time = start;
     p1->killed = 0;
+    p1->running = 0;
 
     sem_wait(&queue1->lock);
     if(queue1->n_proc < 100){
@@ -459,22 +470,22 @@ void takePut(Proc_Queue* queue1,int index){
     queue1->list_procs[queue1->n_proc-1] = takenProcess;
 }
 
-char* strProc(struct process* process) {
+char* strProc(proc* process) {
     char* processDetails = (char*)malloc(2000 * sizeof(char)); // Adjust the buffer size as needed
     if (processDetails == NULL) {
         perror("Malloc failed!");
         exit(EXIT_FAILURE);
     }
 
-    // Format and append the process details to the processDetails string
-    int totalLength = 0;
-    totalLength += sprintf(processDetails + totalLength, "\tNAME: %s\n", process->name);
-    totalLength += sprintf(processDetails + totalLength, "\tPID: %d\n", process->pid);
-    totalLength += sprintf(processDetails + totalLength, "\tExecution Time: %f\n", process->execution_time);
-    totalLength += sprintf(processDetails + totalLength, "\tTotal Waiting Time: %f\n", process->total_waiting_time);
-    //printf("%s\n",processDetails);
+    char start_time_str[30], end_time_str[30];
+
+    strftime(start_time_str, sizeof(start_time_str), "%H:%M:%S", localtime(&process->st_time.tv_sec));
+    strftime(end_time_str, sizeof(end_time_str), "%H:%M:%S", localtime(&process->end_time.tv_sec));
+
+    sprintf(processDetails, "\n\n---------------------------------------------------------------------------\n\n%d) \tNAME: %s\n\t\tPID: %d\n\t\tStart Time: %s.%09ld\n\t\tEnd Time: %s.%09ld\n\t\tTotal Waiting Time: %.3lf ms\n\t\tTotal Execution Time: %.3lf ms\n",queue->d_proc + 1,process->name,process->pid,start_time_str,process->st_time.tv_nsec,end_time_str,process->end_time.tv_nsec,process->total_waiting_time,process->execution_time);
     return processDetails;
 }
+
 void shell_loop(int NCPU, int TSLICE){
     int status = 1;
     char input[100];
@@ -482,6 +493,11 @@ void shell_loop(int NCPU, int TSLICE){
     char arg[50];
 
     if(signal(SIGINT,Escape_sequence) == SIG_ERR){
+        perror("ERROR");
+        exit(1);
+    }
+
+    if(signal(SIGCHLD,Escape_sequence) == SIG_ERR){
         perror("ERROR");
         exit(1);
     }
@@ -634,8 +650,6 @@ void shell_loop(int NCPU, int TSLICE){
                             n_args++;
                         }
 
-                        // printf("\n\n%s\n\n",arr_args[0]);
-
                         n_args--;
 
                         if(n_args > 2){
@@ -686,9 +700,7 @@ void shell_loop(int NCPU, int TSLICE){
                                         //printf("%s/n",processDetails);
                                         strcpy(queue->exit_Sequence[queue->e_proc], processDetails);
                                         queue->e_proc++;
-                                        for (int k = 0; k<queue->e_proc;k++){
-                                            printf(queue->exit_Sequence[k]);
-                                        }
+
                                         free(processDetails);
 
                                         queue->list_del[queue->d_proc] = queue->list_procs[i];
@@ -705,7 +717,7 @@ void shell_loop(int NCPU, int TSLICE){
                                     printf("PID not found");
                                 }
                                 sem_post(&queue->lock);
-                                exit(0);
+                                kill(getpid(),SIGTERM);
                             }
                             else{
                                 //creating a function for it
@@ -736,10 +748,14 @@ void shell_loop(int NCPU, int TSLICE){
                                     continue;
                                 }
                                 else if (status2 > 0){
+                                    queue->scheduler_parent_pid = getpid();
+
                                     wait(NULL);
                                     exit(0);
                                 }
                                 else{
+                                    queue->scheduler_pid = getpid();
+
                                     int temp_var;
                                     struct timespec temp;
                                     long long diff_ns;
@@ -767,6 +783,7 @@ void shell_loop(int NCPU, int TSLICE){
                                             diff_ms = (double)diff_ns / 1000000.0;
                                             queue->list_procs[i].total_waiting_time += diff_ms;
                                             queue->list_procs[i].last_time = temp;
+                                            queue->list_procs[i].running = 1;
 
                                             kill(queue->list_procs[i].pid,SIGCONT);
                                         }
@@ -789,7 +806,7 @@ void shell_loop(int NCPU, int TSLICE){
                                         sem_post(&queue->lock);
                                         sem_wait(&queue->lock);
                                         for(int i = 0; i < temp_var; i++){
-                                            if(queue->list_procs[i].killed == 0){
+                                            if(queue->list_procs[i].killed == 0 && queue->list_procs[i].running == 1){
                                                 kill(queue->list_procs[i].pid,SIGSTOP);
 
                                                 clock_gettime(CLOCK_REALTIME, &temp);
@@ -797,6 +814,7 @@ void shell_loop(int NCPU, int TSLICE){
                                                 diff_ms = (double)diff_ns / 1000000.0;
                                                 queue->list_procs[i].execution_time += diff_ms;
                                                 queue->list_procs[i].last_time = temp;
+                                                queue->list_procs[i].running = 0;
                                             }
                                         }
                                         for(int i = 0; i < temp_var; i++){
