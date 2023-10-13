@@ -182,14 +182,10 @@ void history() {
 
     printf("History of Terminated Processes:\n");
 
-    for (int i = 0; i < queue->d_proc; i++) {
-        proc process = queue->list_del[i];
-        printf("Process Name: %s\n", process.name);
-        printf("PID: %d\n", process.pid);
-        printf("Execution Time: %.2f ms\n", process.execution_time);
-        printf("Total Waiting Time: %.2f ms\n", process.total_waiting_time);
-        printf("--------------------------------------------------\n");
+    for (int k = 0; k<queue->e_proc;k++){
+        printf(queue->exit_Sequence[k]);
     }
+    printf("\n");
 }
 
 int launch(char command[30],char arg[50],int mode){
@@ -450,7 +446,7 @@ void stopAdd(Proc_Queue* queue1, pid_t pid,char* name){
 }
 
 
-//takePut: takes the process at the mentioned index and enqueues tot the queue
+//takePut: takes the process at the mentioned index and enqueues to the queue
 void takePut(Proc_Queue* queue1,int index){
     proc takenProcess = queue1->list_procs[index];
     for(int i = index+1; i < queue1->n_proc; i++){
@@ -677,6 +673,7 @@ void shell_loop(int NCPU, int TSLICE){
                                         clock_gettime(CLOCK_REALTIME, &temp);
                                         diff_ns = (temp.tv_sec - queue->list_procs[i].last_time.tv_sec) * 1000000000LL + (temp.tv_nsec - queue->list_procs[i].last_time.tv_nsec);
                                         diff_ms = (double)diff_ns / 1000000.0;
+                                        queue->list_procs[i].name = arr_args[0];
                                         queue->list_procs[i].end_time = temp;
                                         queue->list_procs[i].last_time = temp;
                                         queue->list_procs[i].execution_time += diff_ms;
@@ -686,9 +683,10 @@ void shell_loop(int NCPU, int TSLICE){
                                         //printf("%s/n",processDetails);
                                         strcpy(queue->exit_Sequence[queue->e_proc], processDetails);
                                         queue->e_proc++;
+                                        /*
                                         for (int k = 0; k<queue->e_proc;k++){
                                             printf(queue->exit_Sequence[k]);
-                                        }
+                                        }*/
                                         free(processDetails);
 
                                         queue->list_del[queue->d_proc] = queue->list_procs[i];
