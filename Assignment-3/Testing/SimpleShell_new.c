@@ -1,7 +1,7 @@
     #include "shell.h"
 
     #define PATH_MAX 4096
-    #define upperLIM 100
+
     char user_input[100][80];
     int curr_idx =0;
 
@@ -15,10 +15,21 @@
 
     typedef struct Process_Queue{
         int flag;
+
         int n_proc;
-        proc list_procs[100];
+        int n_proc_1;
+        int n_proc_2;
+        int n_proc_3;
+        int n_proc_4;
+
         int d_proc;
-        proc list_del[100];
+
+        proc list_procs_1[20];
+        proc list_procs_2[20];
+        proc list_procs_3[20];
+        proc list_procs_4[20];
+        proc list_del[80];
+
         sem_t lock;
     }Proc_Queue;
 
@@ -34,10 +45,10 @@
             _exit(0);
         }
 
-        if(signum == SIGCHLD){
-            int* n = 0;
-            waitpid(-1,n,WNOHANG);
-        }
+        // if(signum == SIGCHLD){
+        //     int* n = 0;
+        //     waitpid(-1,n,WNOHANG);
+        // }
     }
 
     char* trim(char* string, char* str){
@@ -393,14 +404,44 @@
         }
     }
 
-    void stopAdd(Proc_Queue* queue1, pid_t pid){
+    void stopAdd(Proc_Queue* queue1, pid_t pid, int priority){
+        proc* p1 = (proc*)malloc(sizeof(proc));
+        p1->pid = pid;
+
         sem_wait(&queue1->lock);
-        if(queue1->n_proc < upperLIM){
-            proc* p1 = (proc*)malloc(sizeof(proc));
-            p1->pid = pid;
-            queue1->list_procs[queue->n_proc] = *p1;
-            queue1->n_proc++;
+
+        queue1->n_proc_++;
+
+        switch priority{
+            case 1:
+                if(queue1->n_proc_1 < 20){
+                    queue1->list_procs_1[queue->n_proc_1] = *p1;
+                    queue1->n_proc_1++;
+                }
+                break;
+
+            case 2:
+                if(queue1->n_proc_2 < 20){
+                    queue1->list_procs_2[queue->n_proc_2] = *p1;
+                    queue1->n_proc_2++;
+                }
+                break;
+
+            case 3:
+                if(queue1->n_proc_3 < 20){
+                    queue1->list_procs_3[queue->n_proc_3] = *p1;
+                    queue1->n_proc_3++;
+                }
+                break;
+
+            case 4:
+                if(queue1->n_proc_4 < 20){
+                    queue1->list_procs_4[queue->n_proc_4] = *p1;
+                    queue1->n_proc_4++;
+                }
+                break;
         }
+
         sem_post(&queue1->lock);
 
         if (kill(pid,SIGSTOP) == -1){
@@ -408,7 +449,6 @@
             return;
         }
     }
-
 
     //takePut: takes the process at the mentioned index and enqueues tot the queue
     void takePut(Proc_Queue* queue1,int index){
@@ -441,6 +481,10 @@
         queue = (Proc_Queue*)mmap(NULL,sizeof(Proc_Queue),PROT_READ | PROT_WRITE | PROT_EXEC,MAP_SHARED | MAP_ANONYMOUS,fd_shm,0);
 
         queue->n_proc = 0;
+        queue->n_proc_1 = 0;
+        queue->n_proc_2 = 0;
+        queue->n_proc_3 = 0;
+        queue->n_proc_4 = 0;
         queue->d_proc = 0;
         queue->flag = 0;
         sem_init(&queue->lock,1,1);
@@ -583,8 +627,6 @@
                                 n_args++;
                             }
 
-                            // printf("\n\n%s\n\n",arr_args[0]);
-
                             n_args--;
 
                             if(n_args > 2){
@@ -628,25 +670,24 @@
                                             break;
                                         }
                                     }
-                                    if(!found){
-                                        printf("PID not found");
-                                    }
+                                    // if(!found){
+                                    //     printf("PID not found");
+                                    // }
                                     sem_post(&queue->lock);
                                     exit(0);
                                 }
                                 else{
                                     //creating a function for it
-                                    stopAdd(queue,getpid()); 
+                                    if(n_args == 1){
+                                        stopAdd(queue,getpid(),1);
+                                    }
+                                    if(n_args == 2){
+                                        stopAdd(queue,getpid(),arr_args[1]);
+                                    }
                                     execl(arr_args[0],NULL);
                                 }
                             }
 
-                            // if(n_args == 1){
-
-                            // }
-                            // if(n_args == 2){
-
-                            // }
                             sem_wait(&queue->lock);
                             if(queue->flag==0){
                                 queue->flag = 1;
@@ -682,9 +723,27 @@
                                                 temp_var = queue->n_proc;
                                             }
                                             sem_post(&queue->lock);
+
+                                            int index_queue_1 = 0;
+                                            int index_queue_2 = 0;
+                                            int index_queue_3 = 0;
+                                            int index_queue_4 = 0;
+
                                             sem_wait(&queue->lock);
                                             for(int i = 0; i < temp_var; i++){
-                                                kill(queue->list_procs[i].pid,SIGCONT);
+                                                if(index_queue_4 == queue->n_proc_4){
+                                                    if(index_queue_3 == queue->n_proc_3){
+                                                        if(index_queue_2 == queue->n_proc_2){
+                                                            kill(queue->list_procs_1[index_queue_1++].pid,SIGCONT);
+                                                            continue;
+                                                        }
+                                                        kill(queue->list_procs_2[index_queue_2++].pid,SIGCONT);
+                                                        continue;
+                                                    }
+                                                    kill(queue->list_procs_3[index_queue_3++].pid,SIGCONT);
+                                                    continue;
+                                                }
+                                                kill(queue->list_procs_4[index_queue_4++].pid,SIGCONT);
                                             }
                                             sem_post(&queue->lock);
 
