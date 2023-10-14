@@ -696,7 +696,6 @@ void shell_loop(int NCPU, int TSLICE){
                                         queue->list_procs[i].killed = 1;
 
                                         char* processDetails = strProc(&queue->list_procs[i]);
-                                        //printf("%s/n",processDetails);
                                         strcpy(queue->exit_Sequence[queue->e_proc], processDetails);
                                         queue->e_proc++;
 
@@ -811,7 +810,7 @@ void shell_loop(int NCPU, int TSLICE){
                                             }
                                         }
                                         for(int i = 0; i < temp_var; i++){
-                                            takePut(queue,i);
+                                            takePut(queue,0);
                                         }
                                         sem_post(&queue->lock);
                                     }
