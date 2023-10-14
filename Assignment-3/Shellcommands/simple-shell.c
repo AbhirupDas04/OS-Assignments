@@ -3,7 +3,7 @@
 #define PATH_MAX 4096
 
 char user_input[100][80];
-int curr_idx =0;
+int curr_idx = 0;
 
 //process struct definition
 typedef struct process{
@@ -40,6 +40,9 @@ typedef struct Process_Queue{
 
     proc list_procs[4][20];         //all the processes given to the scheduler are stored here
     proc list_del[80];              //all the executed processes are stored here
+    double avg_wait_list[4];
+    int n_del_proc_arr[4];
+    char wait_str_list[4][20];
 
     sem_t lock;                     // a semaphore lock
 }Proc_Queue;
@@ -71,6 +74,7 @@ void Escape_sequence(int signum){
             //killing the scheduler and its parent to prevent multiple execution of this function upon catching ctrl+C
             kill(queue->scheduler_parent_pid,SIGTERM);
             kill(queue->scheduler_pid,SIGTERM);
+
             //write is a async safe function
             int i=0;
             if(write(1,"\n",1) == -1){
@@ -85,6 +89,33 @@ void Escape_sequence(int signum){
                 }
                 i++;
             }
+
+            write(1,"-------------------------------------------------------------------------------------------------------\n\n\nSTATISTICS ON THE EFFECT OF PRIORITY ON OUR PROCESSES:\n\n\n",163);
+            write(1,"Average Waiting Time of:-\n\n",27);
+
+            if(queue->n_del_proc_arr[3] != 0){
+                write(1,"Priority 4 -> ",15);
+                write(1,queue->wait_str_list[3],sizeof(queue->wait_str_list[3]));
+                write(1," ms\n",4);
+            }
+            if(queue->n_del_proc_arr[2] != 0){
+                write(1,"Priority 3 -> ",15);
+                write(1,queue->wait_str_list[2],sizeof(queue->wait_str_list[2]));
+                write(1," ms\n",4);
+            }
+            if(queue->n_del_proc_arr[1] != 0){
+                write(1,"Priority 2 -> ",15);
+                write(1,queue->wait_str_list[1],sizeof(queue->wait_str_list[1]));
+                write(1," ms\n",4);
+            }
+            if(queue->n_del_proc_arr[0] != 0){
+                write(1,"Priority 1 -> ",15);
+                write(1,queue->wait_str_list[0],sizeof(queue->wait_str_list[0]));
+                write(1," ms\n",4);
+            }
+
+            write(1,"\n\n",2);
+
             _exit(0);
         }
     }
@@ -565,6 +596,11 @@ void shell_loop(int NCPU, int TSLICE){
     queue->n_proc_arr[2] = 0;
     queue->n_proc_arr[3] = 0;
 
+    queue->n_del_proc_arr[0] = 0;
+    queue->n_del_proc_arr[1] = 0;
+    queue->n_del_proc_arr[2] = 0;
+    queue->n_del_proc_arr[3] = 0;
+
     queue->d_proc = 0;
     queue->e_proc = 0;
     queue->flag = 0;
@@ -780,6 +816,13 @@ void shell_loop(int NCPU, int TSLICE){
                                         queue->list_procs[prio-1][i].execution_time += diff_ms;
                                         queue->list_procs[prio-1][i].killed = 1;
 
+                                        queue->avg_wait_list[prio-1] = ((queue->avg_wait_list[prio-1] * (queue->n_del_proc_arr[prio-1])) + queue->list_procs[prio-1][i].total_waiting_time) / (queue->n_del_proc_arr[prio-1] + 1);
+
+                                        char * temp_str = (char*)malloc(20*sizeof(char));
+                                        sprintf(temp_str,"%f",queue->avg_wait_list[prio-1]);
+                                        strcpy(queue->wait_str_list[prio-1],temp_str);
+                                        free(temp_str);
+
                                         //adding the process details to exit_Sequence
                                         char* processDetails = strProc(&queue->list_procs[prio-1][i]);
                                         strcpy(queue->exit_Sequence[queue->e_proc], processDetails);
@@ -793,6 +836,7 @@ void shell_loop(int NCPU, int TSLICE){
                                         }
 
                                         //incrementing the number of deleted processes by one
+                                        queue->n_del_proc_arr[prio-1]++;
                                         queue->d_proc++;
                                         found = 1;
                                         break;
@@ -1063,6 +1107,5 @@ void shell_loop(int NCPU, int TSLICE){
             }
         }
     }
-    
     while(status != 0);
 }
