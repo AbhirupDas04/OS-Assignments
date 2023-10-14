@@ -29,21 +29,16 @@ typedef struct Process_Queue{
     int flag;                       // a flag to check whether the scheduler has started or not (1 means started)
 
     int e_proc;                     // the number of executed processes that have been converted into a string format and stored into the exit_Sequence
-
     int n_proc;                     //the total number of processes given to the scheduler
-
     int n_proc_arr[4];              //the proirity queue array(to store the processes in respective priority sub-arrays)
-
     int d_proc;                     //the total number of deleted processes(executed processes)
 
     int scheduler_pid;              //the pid of the scheduler
-
     int scheduler_parent_pid;       //the pid of the schedulers parent
 
     char exit_Sequence[100][1000];  //array to store all the executed processes details in a string format
 
     proc list_procs[4][20];         //all the processes given to the scheduler are stored here
-
     proc list_del[80];              //all the executed processes are stored here
 
     sem_t lock;                     // a semaphore lock
@@ -754,7 +749,7 @@ void shell_loop(int NCPU, int TSLICE){
                             else if(status3 > 0){
                                 int pid = wait(NULL);
                                 sem_wait(&queue->lock);
-                                //making edits here
+
                                 //find the process that has 
                                 //just terminated after calling exec and figure out a way to delete it effectively
                                 int found = 0;
@@ -777,13 +772,14 @@ void shell_loop(int NCPU, int TSLICE){
                                     if (queue->list_procs[prio-1][i].pid == pid){
                                         // Found the process, remove it by shifting the remaining processes
                                         clock_gettime(CLOCK_REALTIME, &temp);
-                                        diff_ns = (temp.tv_sec - queue->list_procs[prio-1][i].last_time.tv_sec) * 1000000000LL + (temp.tv_nsec - queue->list_procs[prio-1][i].last_time.tv_nsec);
+                                        diff_ns = (temp.tv_sec - queue->list_procs[prio-1][i].st_time.tv_sec) * 1000000000LL + (temp.tv_nsec - queue->list_procs[prio-1][i].st_time.tv_nsec);
                                         diff_ms = (double)diff_ns / 1000000.0;
+
                                         queue->list_procs[prio-1][i].end_time = temp;
                                         queue->list_procs[prio-1][i].last_time = temp;
-
-                                        queue->list_procs[prio-1][i].execution_time += TSLICE;
+                                        queue->list_procs[prio-1][i].execution_time += diff_ms;
                                         queue->list_procs[prio-1][i].killed = 1;
+
                                         //adding the process details to exit_Sequence
                                         char* processDetails = strProc(&queue->list_procs[prio-1][i]);
                                         strcpy(queue->exit_Sequence[queue->e_proc], processDetails);
@@ -1029,7 +1025,6 @@ void shell_loop(int NCPU, int TSLICE){
                                                     clock_gettime(CLOCK_REALTIME, &temp);
                                                     diff_ns = (temp.tv_sec - queue->list_procs[i][j].last_time.tv_sec) * 1000000000LL + (temp.tv_nsec - queue->list_procs[i][j].last_time.tv_nsec);
                                                     diff_ms = (double)diff_ns / 1000000.0;
-                                                    queue->list_procs[i][j].execution_time += TSLICE;
                                                     queue->list_procs[i][j].last_time = temp;
                                                     queue->list_procs[i][j].running = 0;
                                                 }
