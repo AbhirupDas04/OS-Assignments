@@ -8,17 +8,13 @@ int curr_idx =0;
 //process struct definition
 typedef struct process{
     pid_t pid;                      //pid of the process
-
     int prio;                       //priority of the process
 
     int killed;                     // flag to check if the process is killed or not
-
     int running;                    // flag to check if the process has started execution or not
     
     struct timespec st_time;        // the start time of the process
-    
     struct timespec end_time;       // the end time of the process
-    
     struct timespec last_time;      //the last time the process got CPU time
     
     double execution_time;          // the total execution time of the process
@@ -60,7 +56,6 @@ Proc_Queue* queue;
 
 int fd_shm;
 char* text = "Shared_Mem";
-
 
 //Escape_sequence: it is a function to print out the details of each and every executed processes when ctrl+C is encountered by the shell
 /*Output Format:
@@ -502,6 +497,7 @@ void stopAdd(Proc_Queue* queue1, pid_t pid, int priority,char* name){
     sem_wait(&queue1->lock);
 
     queue1->n_proc++;
+  
     //adding it to list_procs and incrementing n_procs by one
     if(queue1->n_proc_arr[priority-1] < 20){
         queue1->list_procs[priority-1][queue1->n_proc_arr[priority-1]] = *p1;
@@ -516,7 +512,6 @@ void stopAdd(Proc_Queue* queue1, pid_t pid, int priority,char* name){
     }
 }
 
-
 //takePut: takes the process at the mentioned index and enqueues to the particular sub_array based on priority of the process
 void takePut(Proc_Queue* queue1,int index,int priority){
     proc takenProcess = queue1->list_procs[priority-1][index];
@@ -527,7 +522,6 @@ void takePut(Proc_Queue* queue1,int index,int priority){
 
     queue1->list_procs[priority-1][queue1->n_proc_arr[priority-1]-1] = takenProcess;
 }
-
 
 //strProc: it is a function to  take all details of the process like pid,name,execution time,start time,end time,wait time,priority and returns it in a string format
 char* strProc(proc* process) {
@@ -545,7 +539,6 @@ char* strProc(proc* process) {
     sprintf(processDetails, "---------------------------------------------------------------------------\n\n%d) \tNAME: %s\n\n\t\tPID: %d\n\t\tPriority: %d\n\t\tStart Time: %s.%09ld\n\t\tEnd Time: %s.%09ld\n\t\tTotal Waiting Time: %.3lf ms\n\t\tTotal Execution Time: %.3lf ms\n\n\n",queue->d_proc + 1,process->name,process->pid,process->prio,start_time_str,process->st_time.tv_nsec,end_time_str,process->end_time.tv_nsec,process->total_waiting_time,process->execution_time);
     return processDetails;
 }
-
 
 //shell_loop: it is the main execution loop function where the shell runs in an infinite loop and prompts the user for input and gives out output of neccessary format
 void shell_loop(int NCPU, int TSLICE){
@@ -576,6 +569,7 @@ void shell_loop(int NCPU, int TSLICE){
     queue->n_proc_arr[1] = 0;
     queue->n_proc_arr[2] = 0;
     queue->n_proc_arr[3] = 0;
+
     queue->d_proc = 0;
     queue->e_proc = 0;
     queue->flag = 0;
@@ -787,7 +781,8 @@ void shell_loop(int NCPU, int TSLICE){
                                         diff_ms = (double)diff_ns / 1000000.0;
                                         queue->list_procs[prio-1][i].end_time = temp;
                                         queue->list_procs[prio-1][i].last_time = temp;
-                                        queue->list_procs[prio-1][i].execution_time += diff_ms;
+
+                                        queue->list_procs[prio-1][i].execution_time += TSLICE;
                                         queue->list_procs[prio-1][i].killed = 1;
                                         //adding the process details to exit_Sequence
                                         char* processDetails = strProc(&queue->list_procs[prio-1][i]);
@@ -800,12 +795,14 @@ void shell_loop(int NCPU, int TSLICE){
                                         for (int j = i; j < len - 1; j++) {
                                             queue->list_procs[prio-1][j] = queue->list_procs[prio-1][j + 1];
                                         }
+
                                         //incrementing the number of deleted processes by one
                                         queue->d_proc++;
                                         found = 1;
                                         break;
                                     }
                                 }
+
                                 //adding on basis of priority
                                 queue->n_proc_arr[prio-1]--;
                                 //decreasing the number of processes by one
@@ -983,9 +980,11 @@ void shell_loop(int NCPU, int TSLICE){
                                                     }
                                                 }
                                             }
+                                          
                                             // get the next process for executing
                                             main_proc = &queue->list_procs[(curr_list+3)%4][temp_arr[(curr_list+3)%4]];
                                             temp_arr[(curr_list+3)%4]++;
+                                          
                                             // to record the current system time and update the process state
                                             clock_gettime(CLOCK_REALTIME, &temp);
                                             diff_ns = (temp.tv_sec - main_proc->last_time.tv_sec) * 1000000000LL + (temp.tv_nsec - main_proc->last_time.tv_nsec);
@@ -993,6 +992,7 @@ void shell_loop(int NCPU, int TSLICE){
                                             main_proc->total_waiting_time += diff_ms;
                                             main_proc->last_time = temp;
                                             main_proc->running = 1;
+                                          
                                             //sending a continue signal to start the process execution
                                             kill(main_proc->pid,SIGCONT);
                                         }
@@ -1018,21 +1018,24 @@ void shell_loop(int NCPU, int TSLICE){
 
                                         sem_post(&queue->lock);
                                         sem_wait(&queue->lock);
+                                      
                                         //suspending the current running process 
                                         for(int i = 3; i >= 0; i--){
                                             for(int j = 0; j < temp_arr[i]; j++){
                                                 if(queue->list_procs[i][j].killed == 0 && queue->list_procs[i][j].running == 1){
                                                     kill(queue->list_procs[i][j].pid,SIGSTOP);
+                                                  
                                                     //calculating the execution time,updating the last time and changing the runnning flag to zero before the process gets kicked out of the cpu
                                                     clock_gettime(CLOCK_REALTIME, &temp);
                                                     diff_ns = (temp.tv_sec - queue->list_procs[i][j].last_time.tv_sec) * 1000000000LL + (temp.tv_nsec - queue->list_procs[i][j].last_time.tv_nsec);
                                                     diff_ms = (double)diff_ns / 1000000.0;
-                                                    queue->list_procs[i][j].execution_time += diff_ms;
+                                                    queue->list_procs[i][j].execution_time += TSLICE;
                                                     queue->list_procs[i][j].last_time = temp;
                                                     queue->list_procs[i][j].running = 0;
                                                 }
                                             }
                                         }
+
                                         //adding the process to the end of the process queue.
                                         for(int i = 3; i >= 0; i--){
                                             for(int j = 0; j < temp_arr[i]; j++){

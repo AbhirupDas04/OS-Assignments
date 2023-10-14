@@ -8,6 +8,8 @@ int curr_idx =0;
 //process struct definition
 typedef struct process{
     pid_t pid;
+
+    int prio;
     
     int killed;
     int running;
@@ -28,15 +30,21 @@ typedef struct Process_Queue{
     int flag;
 
     int e_proc;
+
     int n_proc;
+    int n_proc_1;
+    int n_proc_2;
+    int n_proc_3;
+    int n_proc_4;
+
     int d_proc;
 
     int scheduler_pid;
     int scheduler_parent_pid;
 
-    char exit_Sequence[1000][1000];
-    proc list_procs[100];
-    proc list_del[100];
+    char exit_Sequence[100][1000];
+    proc list_procs[4][20];
+    proc list_del[80];
 
     sem_t lock;
 }Proc_Queue;
@@ -431,7 +439,7 @@ int launch(char command[30],char arg[50],int mode){
     }
 }
 
-void stopAdd(Proc_Queue* queue1, pid_t pid,char* name){
+void stopAdd(Proc_Queue* queue1, pid_t pid, int priority,char* name){
     struct timespec start;
     clock_gettime(CLOCK_REALTIME, &start);
 
@@ -440,6 +448,7 @@ void stopAdd(Proc_Queue* queue1, pid_t pid,char* name){
         p1->name[i] = name[i];
     }
     p1->pid = pid;
+    p1->prio = priority;
     p1->st_time = start;
     p1->total_waiting_time = 0;
     p1->execution_time = 0;
@@ -448,10 +457,39 @@ void stopAdd(Proc_Queue* queue1, pid_t pid,char* name){
     p1->running = 0;
 
     sem_wait(&queue1->lock);
-    if(queue1->n_proc < 100){
-        queue1->list_procs[queue->n_proc] = *p1;
-        queue1->n_proc++;
+
+    queue1->n_proc_++;
+
+    switch priority{
+        case 1:
+            if(queue1->n_proc_1 < 20){
+                queue1->list_procs[priority][queue->n_proc_1] = *p1;
+                queue1->n_proc_1++;
+            }
+            break;
+
+        case 2:
+            if(queue1->n_proc_2 < 20){
+                queue1->list_procs[priority][queue->n_proc_2] = *p1;
+                queue1->n_proc_2++;
+            }
+            break;
+
+        case 3:
+            if(queue1->n_proc_3 < 20){
+                queue1->list_procs[priority][queue->n_proc_3] = *p1;
+                queue1->n_proc_3++;
+            }
+            break;
+
+        case 4:
+            if(queue1->n_proc_4 < 20){
+                queue1->list_procs[priority][queue->n_proc_4] = *p1;
+                queue1->n_proc_4++;
+            }
+            break;
     }
+
     sem_post(&queue1->lock);
 
     if (kill(pid,SIGSTOP) == -1){
@@ -461,12 +499,38 @@ void stopAdd(Proc_Queue* queue1, pid_t pid,char* name){
 }
 
 //takePut: takes the process at the mentioned index and enqueues tot the queue
-void takePut(Proc_Queue* queue1,int index){
-    proc takenProcess = queue1->list_procs[index];
-    for(int i = index+1; i < queue1->n_proc; i++){
-        queue1->list_procs[i-1] = queue1->list_procs[i];
+void takePut(Proc_Queue* queue1,int index,int priority){
+    proc takenProcess = queue1->list_procs[priority][index];
+
+    switch(priority){
+        case 1:
+            for(int i = index+1; i < queue1->n_proc_1; i++){
+                queue1->list_procs[priority][i-1] = queue1->list_procs[priority][i];
+            }
+            queue1->list_procs[priority][queue1->n_proc_1-1] = takenProcess;
+            break;
+        
+        case 2:
+            for(int i = index+1; i < queue1->n_proc_2; i++){
+                queue1->list_procs[priority][i-1] = queue1->list_procs[priority][i];
+            }
+            queue1->list_procs[priority][queue1->n_proc_2-1] = takenProcess;
+            break;
+
+        case 3:
+            for(int i = index+1; i < queue1->n_proc_3; i++){
+                queue1->list_procs[priority][i-1] = queue1->list_procs[priority][i];
+            }
+            queue1->list_procs[priority][queue1->n_proc_3-1] = takenProcess;
+            break;
+
+        case 4:
+            for(int i = index+1; i < queue1->n_proc_4; i++){
+                queue1->list_procs[priority][i-1] = queue1->list_procs[priority][i];
+            }
+            queue1->list_procs[priority][queue1->n_proc_4-1] = takenProcess;
+            break;
     }
-    queue1->list_procs[queue1->n_proc-1] = takenProcess;
 }
 
 char* strProc(proc* process) {
@@ -506,6 +570,10 @@ void shell_loop(int NCPU, int TSLICE){
     queue = (Proc_Queue*)mmap(NULL,sizeof(Proc_Queue),PROT_READ | PROT_WRITE | PROT_EXEC,MAP_SHARED | MAP_ANONYMOUS,fd_shm,0);
 
     queue->n_proc = 0;
+    queue->n_proc_1 = 0;
+    queue->n_proc_2 = 0;
+    queue->n_proc_3 = 0;
+    queue->n_proc_4 = 0;
     queue->d_proc = 0;
     queue->e_proc = 0;
     queue->flag = 0;
@@ -679,38 +747,67 @@ void shell_loop(int NCPU, int TSLICE){
                                 //find the process that has 
                                 //just terminated after calling exec and figure out a way to delete it effectively
                                 int found = 0;
-                                struct timespec temp;
-                                long long diff_ns;
-                                double diff_ms;
 
-                                for (int i = 0; i < queue->n_proc; i++) {
-                                    if (queue->list_procs[i].pid == pid) {
+                                int prio;
+
+                                if(n_args == 1){
+                                    prio = 1;
+                                }
+                                if(n_args == 2){
+                                    prio = arr_args[1];
+                                }
+
+                                int len;
+
+                                switch(prio){
+                                    case 1:
+                                        len = queue->n_proc_1;
+                                        break;
+                                    
+                                    case 2:
+                                        len = queue->n_proc_2;
+                                        break;
+
+                                    case 3:
+                                        len = queue->n_proc_3;
+                                        break;
+
+                                    case 4:
+                                        len = queue->n_proc_4;
+                                        break;
+                                }
+
+                                for (int i = 0; i < len; i++) {
+                                    if (queue->list_procs[prio][i].pid == pid){
                                         // Found the process, remove it by shifting the remaining processes
-
-                                        clock_gettime(CLOCK_REALTIME, &temp);
-                                        diff_ns = (temp.tv_sec - queue->list_procs[i].last_time.tv_sec) * 1000000000LL + (temp.tv_nsec - queue->list_procs[i].last_time.tv_nsec);
-                                        diff_ms = (double)diff_ns / 1000000.0;
-                                        queue->list_procs[i].end_time = temp;
-                                        queue->list_procs[i].last_time = temp;
-                                        queue->list_procs[i].execution_time += diff_ms;
-                                        queue->list_procs[i].killed = 1;
-
-                                        char* processDetails = strProc(&queue->list_procs[i]);
-                                        strcpy(queue->exit_Sequence[queue->e_proc], processDetails);
-                                        queue->e_proc++;
-
-                                        free(processDetails);
-
-                                        queue->list_del[queue->d_proc] = queue->list_procs[i];
-                                        for (int j = i; j < queue->n_proc - 1; j++) {
-                                            queue->list_procs[j] = queue->list_procs[j + 1];
+                                        queue->list_del[queue->d_proc] = queue->list_procs[prio][i];
+                                        for (int j = i; j < len - 1; j++) {
+                                            queue->list_procs[prio][j] = queue->list_procs[prio][j + 1];
                                         }
-                                        queue->n_proc--;
                                         queue->d_proc++;
                                         found = 1;
                                         break;
                                     }
                                 }
+
+                                switch(prio){
+                                    case 1:
+                                        queue->n_proc_1--;
+                                        break;
+                                    
+                                    case 2:
+                                        queue->n_proc_2--;
+                                        break;
+
+                                    case 3:
+                                        queue->n_proc_3--;
+                                        break;
+
+                                    case 4:
+                                        queue->n_proc_4--;
+                                        break;
+                                }
+
                                 if(!found){
                                     printf("PID not found");
                                 }
@@ -719,7 +816,12 @@ void shell_loop(int NCPU, int TSLICE){
                             }
                             else{
                                 //creating a function for it
-                                stopAdd(queue,getpid(),arr_args[0]); 
+                                if(n_args == 1){
+                                    stopAdd(queue,getpid(),1,arr_args[0]);
+                                }
+                                if(n_args == 2){
+                                    stopAdd(queue,getpid(),arr_args[1],arr_args[0]);
+                                }
                                 execl(arr_args[0],NULL);
                             }
                         }
@@ -749,10 +851,6 @@ void shell_loop(int NCPU, int TSLICE){
                                     queue->scheduler_pid = getpid();
 
                                     int temp_var;
-                                    struct timespec temp;
-                                    long long diff_ns;
-                                    double diff_ms;
-
                                     while(1){
                                         sem_wait(&queue->lock);
                                         if(queue->n_proc == 0){
@@ -768,16 +866,26 @@ void shell_loop(int NCPU, int TSLICE){
                                         }
                                         sem_post(&queue->lock);
 
+                                        int index_queue_1 = 0;
+                                        int index_queue_2 = 0;
+                                        int index_queue_3 = 0;
+                                        int index_queue_4 = 0;
+
                                         sem_wait(&queue->lock);
                                         for(int i = 0; i < temp_var; i++){
-                                            clock_gettime(CLOCK_REALTIME, &temp);
-                                            diff_ns = (temp.tv_sec - queue->list_procs[i].last_time.tv_sec) * 1000000000LL + (temp.tv_nsec - queue->list_procs[i].last_time.tv_nsec);
-                                            diff_ms = (double)diff_ns / 1000000.0;
-                                            queue->list_procs[i].total_waiting_time += diff_ms;
-                                            queue->list_procs[i].last_time = temp;
-                                            queue->list_procs[i].running = 1;
-
-                                            kill(queue->list_procs[i].pid,SIGCONT);
+                                            if(index_queue_4 == queue->n_proc_4){
+                                                if(index_queue_3 == queue->n_proc_3){
+                                                    if(index_queue_2 == queue->n_proc_2){
+                                                        kill(queue->list_procs_1[index_queue_1++].pid,SIGCONT);
+                                                        continue;
+                                                    }
+                                                    kill(queue->list_procs_2[index_queue_2++].pid,SIGCONT);
+                                                    continue;
+                                                }
+                                                kill(queue->list_procs_3[index_queue_3++].pid,SIGCONT);
+                                                continue;
+                                            }
+                                            kill(queue->list_procs_4[index_queue_4++].pid,SIGCONT);
                                         }
                                         sem_post(&queue->lock);
 
@@ -798,19 +906,10 @@ void shell_loop(int NCPU, int TSLICE){
                                         sem_post(&queue->lock);
                                         sem_wait(&queue->lock);
                                         for(int i = 0; i < temp_var; i++){
-                                            if(queue->list_procs[i].killed == 0 && queue->list_procs[i].running == 1){
-                                                kill(queue->list_procs[i].pid,SIGSTOP);
-
-                                                clock_gettime(CLOCK_REALTIME, &temp);
-                                                diff_ns = (temp.tv_sec - queue->list_procs[i].last_time.tv_sec) * 1000000000LL + (temp.tv_nsec - queue->list_procs[i].last_time.tv_nsec);
-                                                diff_ms = (double)diff_ns / 1000000.0;
-                                                queue->list_procs[i].execution_time += diff_ms;
-                                                queue->list_procs[i].last_time = temp;
-                                                queue->list_procs[i].running = 0;
-                                            }
+                                            kill(queue->list_procs[i].pid,SIGSTOP);
                                         }
                                         for(int i = 0; i < temp_var; i++){
-                                            takePut(queue,0);
+                                            takePut(queue,i);
                                         }
                                         sem_post(&queue->lock);
                                     }

@@ -10,5 +10,8 @@ int fib(int n){
 }
 
 void main(){
-    printf("%d\n",fib(45));
+    for(int i = 0; i < 15; i++){
+        fib(41);
+        printf("%d Armaan\n", i);
+    }
 }
