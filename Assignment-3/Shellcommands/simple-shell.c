@@ -73,6 +73,7 @@ void Escape_sequence(int signum){
                 }
                 i++;
             }
+
             _exit(0);
         }
     }
@@ -719,7 +720,7 @@ void shell_loop(int NCPU, int TSLICE){
                                         diff_ms = (double)diff_ns / 1000000.0;
                                         queue->list_procs[prio-1][i].end_time = temp;
                                         queue->list_procs[prio-1][i].last_time = temp;
-                                        queue->list_procs[prio-1][i].execution_time += diff_ms;
+                                        queue->list_procs[prio-1][i].execution_time += TSLICE;
                                         queue->list_procs[prio-1][i].killed = 1;
 
                                         char* processDetails = strProc(&queue->list_procs[prio-1][i]);
@@ -946,7 +947,7 @@ void shell_loop(int NCPU, int TSLICE){
                                                     clock_gettime(CLOCK_REALTIME, &temp);
                                                     diff_ns = (temp.tv_sec - queue->list_procs[i][j].last_time.tv_sec) * 1000000000LL + (temp.tv_nsec - queue->list_procs[i][j].last_time.tv_nsec);
                                                     diff_ms = (double)diff_ns / 1000000.0;
-                                                    queue->list_procs[i][j].execution_time += diff_ms;
+                                                    queue->list_procs[i][j].execution_time += TSLICE;
                                                     queue->list_procs[i][j].last_time = temp;
                                                     queue->list_procs[i][j].running = 0;
                                                 }
