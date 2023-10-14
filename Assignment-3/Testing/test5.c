@@ -10,5 +10,5 @@ int fib(int n){
 }
 
 void main(){
-    printf("%d",fib(45));
+    printf("%d\n",fib(45));
 }
