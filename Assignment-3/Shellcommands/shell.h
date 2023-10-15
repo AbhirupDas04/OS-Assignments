@@ -14,4 +14,4 @@
 #include <fcntl.h>
 #include <semaphore.h>
 
-void shell_loop(int NCPU, int TSLICE);
+void Simple_Shell(int NCPU, int TSLICE);

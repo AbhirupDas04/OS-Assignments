@@ -37,7 +37,7 @@ int main(int argc, char** argv){
         }
     }
 
-    shell_loop(NCPU,TSLICE);
+    Simple_Shell(NCPU,TSLICE);
     
     return 0; 
 }
