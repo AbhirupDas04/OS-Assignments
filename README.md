@@ -548,5 +548,11 @@ Percentage Change in Waiting Time:
     ((142,706.522 - 121,729.69175) / 121,729.69175) * 100
     = ((142,706.522 - 121,729.69175) / 121,729.69175) * 100
     ≈ 17.23%
+
+Number of time slices allocated to each priority in case 2.2:
+	Priority_4: 13/30
+	Priority_3: 7/30
+	Priority_2: 6/30
+	Priority_1: 4/30
 ```
 e
