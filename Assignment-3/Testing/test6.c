@@ -12,6 +12,6 @@ int fib(int n){
 void main(){
     for(int i = 0; i < 15; i++){
         fib(41);
-        printf("%d Armaan\n", i);
+        printf("%d TESTING...\n", i);
     }
 }
