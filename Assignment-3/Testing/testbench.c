@@ -159,13 +159,13 @@ void timeDEFF(){
 
 
 void main(){
-    // char* args[] = {"./test2",NULL};
+    char* args[] = {"./test2",NULL};
 
-    // int status = fork();
+    int status = fork();
 
-    // if(status == 0){
-    //     execvp("./test2",args);
-    // }
+    if(status == 0){
+        execvp("./test2",args);
+    }
     // else if(status > 0){
     //     kill(status,SIGSTOP);
     //     sleep(5);

@@ -44,6 +44,8 @@ typedef struct Process_Queue{
     int n_del_proc_arr[4];
     char wait_str_list[4][20];
 
+    int sig_int_flag;
+
     sem_t lock;                     // a semaphore lock
 }Proc_Queue;
 
@@ -68,12 +70,35 @@ Total Execution Time: <>ms
 void Escape_sequence(int signum){
     if(signum == SIGINT){
         if(queue->n_proc > 0){
+            if(sem_wait(&queue->lock) == -1){
+                write(1,"Sem_Wait has failed!\n",21);
+                _exit(1);
+            }
+
+            if(queue->sig_int_flag == 0){
+                if(write(1,"Jobs still running!\n\n",21) == -1){
+                    _exit(1);
+                }
+                queue->sig_int_flag++;
+            }
+
+            else if(sem_post(&queue->lock) == -1){
+                write(1,"Sem_Post has failed!\n",21);
+                _exit(1);
+            }
+
             return;
         }
         else{
             //killing the scheduler and its parent to prevent multiple execution of this function upon catching ctrl+C
-            kill(queue->scheduler_parent_pid,SIGTERM);
-            kill(queue->scheduler_pid,SIGTERM);
+            if(kill(queue->scheduler_parent_pid,SIGTERM) == -1){
+                write(1,"Kill Failed!\n",13);
+                _exit(1);
+            }
+            if(kill(queue->scheduler_pid,SIGTERM) == -1){
+                write(1,"Kill Failed!\n",13);
+                _exit(1);
+            }
 
             //write is a async safe function
             int i=0;
@@ -90,31 +115,74 @@ void Escape_sequence(int signum){
                 i++;
             }
 
-            write(1,"-------------------------------------------------------------------------------------------------------\n\n\nSTATISTICS ON THE EFFECT OF PRIORITY ON OUR PROCESSES:\n\n\n",163);
-            write(1,"Average Waiting Time of:-\n\n",27);
+            if(write(1,"-------------------------------------------------------------------------------------------------------\n\n\nSTATISTICS ON THE EFFECT OF PRIORITY ON OUR PROCESSES:\n\n\n",163) == -1){
+                _exit(1);
+            }
+            if(write(1,"Average Waiting Time of:-\n\n",27) == -1){
+                _exit(1);
+            }
 
             if(queue->n_del_proc_arr[3] != 0){
-                write(1,"Priority 4 -> ",15);
-                write(1,queue->wait_str_list[3],sizeof(queue->wait_str_list[3]));
-                write(1," ms\n",4);
+                if(write(1,"Priority 4 -> ",15) == -1){
+                    _exit(1);
+                }
+                if(write(1,queue->wait_str_list[3],sizeof(queue->wait_str_list[3])) == -1){
+                    _exit(1);
+                }
+                if(write(1," ms\n",4) == -1){
+                    _exit(1);
+                }
             }
             if(queue->n_del_proc_arr[2] != 0){
-                write(1,"Priority 3 -> ",15);
-                write(1,queue->wait_str_list[2],sizeof(queue->wait_str_list[2]));
-                write(1," ms\n",4);
+                if(write(1,"Priority 3 -> ",15) == -1){
+                    _exit(1);
+                }
+                if(write(1,queue->wait_str_list[2],sizeof(queue->wait_str_list[2])) == -1){
+                    _exit(1);
+                }
+                if(write(1," ms\n",4) == -1){
+                    _exit(1);
+                }
             }
             if(queue->n_del_proc_arr[1] != 0){
-                write(1,"Priority 2 -> ",15);
-                write(1,queue->wait_str_list[1],sizeof(queue->wait_str_list[1]));
-                write(1," ms\n",4);
+                if(write(1,"Priority 2 -> ",15) == -1){
+                    _exit(1);
+                }
+                if(write(1,queue->wait_str_list[1],sizeof(queue->wait_str_list[1]))==-1){
+                    _exit(1);
+                }
+                if(write(1," ms\n",4) == -1){
+                    _exit(1);
+                }
             }
             if(queue->n_del_proc_arr[0] != 0){
-                write(1,"Priority 1 -> ",15);
-                write(1,queue->wait_str_list[0],sizeof(queue->wait_str_list[0]));
-                write(1," ms\n",4);
+                if(write(1,"Priority 1 -> ",15) == -1){
+                    _exit(1);
+                }
+                if(write(1,queue->wait_str_list[0],sizeof(queue->wait_str_list[0])) == -1){
+                    _exit(1);
+                }
+                if(write(1," ms\n",4) == -1){
+                    _exit(1);
+                }
             }
 
-            write(1,"\n\n",2);
+            if(write(1,"\n\n",2) == -1){
+                _exit(1);
+            }
+
+            if(munmap(queue,sizeof(Proc_Queue)) == -1){
+                write(1,"Munmap Failed!\n",15);
+                _exit(1);
+            }
+            if(close(fd_shm) == -1){
+                write(1, "Close Failed!\n",14);
+                _exit(1);
+            }
+            if(shm_unlink(text) == -1){
+                write(1,"Shm_Unlink Failed!\n",19);
+                _exit(1);
+            }
 
             _exit(0);
         }
@@ -604,6 +672,8 @@ void shell_loop(int NCPU, int TSLICE){
     queue->d_proc = 0;
     queue->e_proc = 0;
     queue->flag = 0;
+    queue->sig_int_flag = 0;
+
     sem_init(&queue->lock,1,1);
 
 
@@ -771,6 +841,33 @@ void shell_loop(int NCPU, int TSLICE){
                             continue;
                         }
 
+                        if(n_args == 2){
+                            int prio = atoi(arr_args[1]);
+                            if(prio <= 0){
+                                printf("Invalid value of Priority!\n");
+                                continue;
+                            }
+
+                            if(prio < 1 || prio > 4){
+                                printf("Priority can only be between 1 and 4!\n");
+                                continue;
+                            }
+
+                            int flag = 0;
+                            int len = strlen(arr_args[1]);
+                            for(int i = 0; i < len; i++){
+                                if(arr_args[1][i] == '.'){
+                                    printf("Priority can't be a float!\n");
+                                    flag = 1;
+                                    break;
+                                }
+                            }
+
+                            if(flag == 1){
+                                continue;
+                            }
+                        }
+
                         int new_proc_status = fork();
                         if(new_proc_status < 0){
                             printf("Fork Failure.\n");
@@ -852,6 +949,14 @@ void shell_loop(int NCPU, int TSLICE){
                                     printf("PID not found");
                                 }
                                 sem_post(&queue->lock);
+
+                                if(munmap(queue,sizeof(Proc_Queue)) == -1){
+                                    perror("Munmap");
+                                }
+                                if(close(fd_shm) == -1){
+                                    // perror("Close");
+                                }
+
                                 kill(getpid(),SIGTERM);
                             }
                             else{
@@ -862,7 +967,19 @@ void shell_loop(int NCPU, int TSLICE){
                                 if(n_args == 2){
                                     stopAdd(queue,getpid(),atoi(arr_args[1]),arr_args[0]);
                                 }
-                                execl(arr_args[0],NULL);
+
+                                char* temp_arr[2];
+                                temp_arr[0] = arr_args[0];
+                                temp_arr[1] = NULL;
+
+                                if(munmap(queue,sizeof(Proc_Queue)) == -1){
+                                    perror("Munmap");
+                                }
+                                if(close(fd_shm) == -1){
+                                    perror("Close");
+                                }
+
+                                execvp(arr_args[0],temp_arr);
                             }
                         }
 
@@ -886,6 +1003,14 @@ void shell_loop(int NCPU, int TSLICE){
                                     queue->scheduler_parent_pid = getpid();
 
                                     wait(NULL);
+
+                                    if(munmap(queue,sizeof(Proc_Queue)) == -1){
+                                        perror("Munmap");
+                                    }
+                                    if(close(fd_shm) == -1){
+                                        perror("Close");
+                                    }
+
                                     exit(0);
                                 }
                                 else{
@@ -1084,6 +1209,14 @@ void shell_loop(int NCPU, int TSLICE){
 
                                         sem_post(&queue->lock);
                                     }
+
+                                    if(munmap(queue,sizeof(Proc_Queue)) == -1){
+                                        perror("Munmap");
+                                    }
+                                    if(close(fd_shm) == -1){
+                                        perror("Close");
+                                    }
+
                                     exit(0);
                                 }
                             }
