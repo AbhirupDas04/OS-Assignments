@@ -1,5 +1,5 @@
 # Asssignment-3
-: SimpleShell
+: SimpleScheduler
 ##### Abhirup Das | Armaan Singh
 ## File Structure
 
