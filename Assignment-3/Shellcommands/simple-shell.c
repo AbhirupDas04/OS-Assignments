@@ -179,7 +179,7 @@ void Escape_sequence(int signum){
             }
             if(close(fd_shm) == -1){
                 // write(1, "Close Failed!\n",14);
-                _exit(1);
+                // _exit(1);
             }
             if(shm_unlink(text) == -1){
                 write(1,"Shm_Unlink Failed!\n",19);
@@ -676,13 +676,22 @@ void Simple_Scheduler(int NCPU, int TSLICE){
     //main execution loop of the scheduler
     while(1){
         // Wait for a lock to access the process queue
-        sem_wait(&queue->lock);
+        if(sem_wait(&queue->lock) == -1){
+            perror("Sem_wait!");
+            exit(1);
+        }
 
         // Check if there are processes in the queue
         if(queue->n_proc == 0){
             // If no processes, release the lock and sleep briefly
-            sem_post(&queue->lock);
-            usleep(TSLICE*1000);
+            if(sem_post(&queue->lock) == -1){
+                perror("Sem_Post");
+                exit(1);
+            }
+            if(usleep(TSLICE*1000) == -1){
+                // perror("Usleep");
+                // exit(1);
+            }
         }
         // Increment the primary index for scheduling
         prim_idx++;
@@ -694,7 +703,11 @@ void Simple_Scheduler(int NCPU, int TSLICE){
         else{
             temp_var = queue->n_proc;
         }
-        sem_post(&queue->lock);
+
+        if(sem_post(&queue->lock) == -1){
+            perror("Sem_Post");
+            exit(1);
+        }
 
         temp_arr[0] = 0;
         temp_arr[1] = 0;
@@ -704,7 +717,10 @@ void Simple_Scheduler(int NCPU, int TSLICE){
         proc* main_proc;
         int req_list;
 
-        sem_wait(&queue->lock);
+        if(sem_wait(&queue->lock) == -1){
+            perror("Sem_Wait");
+            exit(1);
+        }
         
         if(prim_idx % 7 == 0){
             //Selecting list based on condition(time%7 for least priority)
@@ -800,7 +816,10 @@ void Simple_Scheduler(int NCPU, int TSLICE){
             temp_arr[(curr_list+3)%4]++;
             
             // to record the current system time and update the process state
-            clock_gettime(CLOCK_REALTIME, &temp);
+            if(clock_gettime(CLOCK_REALTIME, &temp) == -1){
+                perror("Clock_GetTime");
+                exit(1);
+            }
             diff_ns = (temp.tv_sec - main_proc->last_time.tv_sec) * 1000000000LL + (temp.tv_nsec - main_proc->last_time.tv_nsec);
             diff_ms = (double)diff_ns / 1000000.0;
             main_proc->total_waiting_time += diff_ms;
@@ -808,18 +827,33 @@ void Simple_Scheduler(int NCPU, int TSLICE){
             main_proc->running = 1;
             
             //sending a continue signal to start the process execution
-            kill(main_proc->pid,SIGCONT);
+            if(kill(main_proc->pid,SIGCONT) == -1){
+                perror("kill");
+                exit(1);
+            }
         }
 
-        sem_post(&queue->lock);
+        if(sem_post(&queue->lock) == -1){
+            perror("Sem_Post");
+            exit(1);
+        }
 
-        usleep(TSLICE*1000);
+        if(usleep(TSLICE*1000) == -1){
+            // perror("Usleep");
+            // exit(1);
+        }
 
-        sem_wait(&queue->lock);
+        if(sem_wait(&queue->lock) == -1){
+            perror("Sem_Wait");
+            exit(1);
+        }
 
         //to check if the are any processes in the process queue
         if(queue->n_proc == 0){
-            sem_post(&queue->lock);
+            if(sem_post(&queue->lock) == -1){
+                perror("Sem_Post");
+                exit(1);
+            }
             continue;
         }
 
@@ -830,17 +864,29 @@ void Simple_Scheduler(int NCPU, int TSLICE){
             temp_var = queue->n_proc;
         }
 
-        sem_post(&queue->lock);
-        sem_wait(&queue->lock);
+        if(sem_post(&queue->lock) == -1){
+            perror("Sem_Post");
+            exit(1);
+        }
+        if(sem_wait(&queue->lock) == -1){
+            perror("Sem_Wait");
+            exit(1);
+        }
         
         //suspending the current running process 
         for(int i = 3; i >= 0; i--){
             for(int j = 0; j < temp_arr[i]; j++){
                 if(queue->list_procs[i][j].killed == 0 && queue->list_procs[i][j].running == 1){
-                    kill(queue->list_procs[i][j].pid,SIGSTOP);
+                    if(kill(queue->list_procs[i][j].pid,SIGSTOP) == -1){
+                        perror("kill");
+                        exit(1);
+                    }
                     
                     //calculating the execution time,updating the last time and changing the runnning flag to zero before the process gets kicked out of the cpu
-                    clock_gettime(CLOCK_REALTIME, &temp);
+                    if(clock_gettime(CLOCK_REALTIME, &temp) == -1){
+                        perror("Clock_GetTime");
+                        exit(1);
+                    }
                     diff_ns = (temp.tv_sec - queue->list_procs[i][j].last_time.tv_sec) * 1000000000LL + (temp.tv_nsec - queue->list_procs[i][j].last_time.tv_nsec);
                     diff_ms = (double)diff_ns / 1000000.0;
                     queue->list_procs[i][j].last_time = temp;
@@ -856,7 +902,10 @@ void Simple_Scheduler(int NCPU, int TSLICE){
             }
         }
 
-        sem_post(&queue->lock);
+        if(sem_post(&queue->lock) == -1){
+            perror("Sem_Post");
+            exit(1);
+        }
     }
 
     if(munmap(queue,sizeof(Proc_Queue)) == -1){
@@ -887,12 +936,28 @@ void Simple_Shell(int NCPU, int TSLICE){
         exit(1);
     }
 
+    shm_unlink(text);
+
     //initializing the shared memory
     fd_shm = shm_open(text,O_CREAT | O_EXCL | O_RDWR, 0777);
-    ftruncate(fd_shm,sizeof(Proc_Queue));
+    if(fd_shm == -1){
+        perror("Shm_Open");
+        exit(1);
+    }
+    
+    if(ftruncate(fd_shm,sizeof(Proc_Queue)) == -1){
+        perror("ftruncate");
+        exit(1);
+    }
 
     //initializing the process_queue
     queue = (Proc_Queue*)mmap(NULL,sizeof(Proc_Queue),PROT_READ | PROT_WRITE | PROT_EXEC,MAP_SHARED | MAP_ANONYMOUS,fd_shm,0);
+    
+    if((void*)queue == (void*)-1){
+        perror("mmap");
+        exit(1);
+    }
+
     queue->n_proc = 0;
     queue->n_proc_arr[0] = 0;
     queue->n_proc_arr[1] = 0;
@@ -908,7 +973,10 @@ void Simple_Shell(int NCPU, int TSLICE){
     queue->e_proc = 0;
     queue->sig_int_flag = 0;
 
-    sem_init(&queue->lock,1,1);
+    if(sem_init(&queue->lock,1,1) == -1){
+        perror("Sem_Init");
+        exit(1);
+    }
 
     int status3 = fork();
     if(status3 < 0){
@@ -1147,7 +1215,10 @@ void Simple_Shell(int NCPU, int TSLICE){
                             }
                             else if(status3 > 0){
                                 int pid = wait(NULL);
-                                sem_wait(&queue->lock);
+                                if(sem_wait(&queue->lock) == -1){
+                                    perror("Sem_Wait");
+                                    exit(1);
+                                }
 
                                 //find the process that has 
                                 //just terminated after calling exec and figure out a way to delete it effectively
@@ -1170,7 +1241,10 @@ void Simple_Shell(int NCPU, int TSLICE){
                                 for (int i = 0; i < len; i++) {
                                     if (queue->list_procs[prio-1][i].pid == pid){
                                         // Found the process, remove it by shifting the remaining processes
-                                        clock_gettime(CLOCK_REALTIME, &temp);
+                                        if(clock_gettime(CLOCK_REALTIME, &temp) == -1){
+                                            perror("Clock_gettime");
+                                            exit(1);
+                                        }
                                         diff_ns = (temp.tv_sec - queue->list_procs[prio-1][i].st_time.tv_sec) * 1000000000LL + (temp.tv_nsec - queue->list_procs[prio-1][i].st_time.tv_nsec);
                                         diff_ms = (double)diff_ns / 1000000.0;
 
@@ -1182,7 +1256,11 @@ void Simple_Shell(int NCPU, int TSLICE){
                                         queue->avg_wait_list[prio-1] = ((queue->avg_wait_list[prio-1] * (queue->n_del_proc_arr[prio-1])) + queue->list_procs[prio-1][i].total_waiting_time) / (queue->n_del_proc_arr[prio-1] + 1);
 
                                         char * temp_str = (char*)malloc(20*sizeof(char));
-                                        sprintf(temp_str,"%f",queue->avg_wait_list[prio-1]);
+                                        if(sprintf(temp_str,"%f",queue->avg_wait_list[prio-1]) < 0){
+                                            printf("Sprintf Failed!\n");
+                                            exit(1);
+                                        }
+
                                         strcpy(queue->wait_str_list[prio-1],temp_str);
                                         free(temp_str);
 
@@ -1214,8 +1292,10 @@ void Simple_Shell(int NCPU, int TSLICE){
                                 if(!found){
                                     printf("PID not found");
                                 }
-                                sem_post(&queue->lock);
-
+                                if(sem_post(&queue->lock) == -1){
+                                    perror("Sem_Post");
+                                    exit(1);
+                                }
                                 if(munmap(queue,sizeof(Proc_Queue)) == -1){
                                     perror("Munmap");
                                 }
@@ -1223,7 +1303,10 @@ void Simple_Shell(int NCPU, int TSLICE){
                                     // perror("Close");
                                 }
 
-                                kill(getpid(),SIGTERM);
+                                if(kill(getpid(),SIGTERM) == -1){
+                                    perror("kill");
+                                    exit(1);
+                                }
                             }
                             else{
                                 //creating a function for it
@@ -1246,6 +1329,9 @@ void Simple_Shell(int NCPU, int TSLICE){
                                 }
 
                                 execvp(arr_args[0],temp_arr);
+
+                                printf("Execvp Failed!\n");
+                                exit(1);
                             }
                         }
                     }
