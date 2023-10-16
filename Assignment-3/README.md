@@ -555,4 +555,8 @@ Number of time slices allocated to each priority in case 2.2:
 	Priority_2: 6/30
 	Priority_1: 4/30
 ```
+## Limitation of our program
+```
+Our priority count doesnt work well with high CPU counts and it is better with low CPU counts.
+```
 e
