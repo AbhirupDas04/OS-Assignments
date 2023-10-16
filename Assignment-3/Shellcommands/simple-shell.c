@@ -33,6 +33,7 @@ typedef struct Process_Queue{
 
     int scheduler_pid;              //the pid of the scheduler
     int scheduler_parent_pid;       //the pid of the schedulers parent
+    int shell_pid;
 
     char exit_Sequence[100][1000];  //array to store all the executed processes details in a string format
 
@@ -67,52 +68,28 @@ Total Execution Time: <>ms
 */
 void Escape_sequence(int signum){
     if(signum == SIGINT){
-        if(queue->n_proc > 0){
-            if(sem_wait(&queue->lock) == -1){
-                write(1,"Sem_Wait has failed!\n",21);
-                _exit(1);
-            }
+        //killing the scheduler and its parent to prevent multiple execution of this function upon catching ctrl+C
+        if(kill(queue->scheduler_parent_pid,SIGTERM) == -1){
+            write(1,"Kill Failed!\n",13);
+            _exit(1);
+        }
 
-            if(queue->sig_int_flag == 0){
-                if(write(1,"Jobs still running!\n\n",21) == -1){
+        //write is a async safe function
+        int i=0;
+        if(write(1,"\n",1) == -1){
+            _exit(1);
+        }
+        while(strncmp(queue->exit_Sequence[i],"\0", strlen(queue->exit_Sequence[i]))){
+            int len = strlen(queue->exit_Sequence[i]);
+            for (int j = 0; j < len; j++) {
+                if(write(1, &queue->exit_Sequence[i][j], 1) == -1){
                     _exit(1);
                 }
-                queue->sig_int_flag++;
             }
-
-            else if(sem_post(&queue->lock) == -1){
-                write(1,"Sem_Post has failed!\n",21);
-                _exit(1);
-            }
-
-            return;
+            i++;
         }
-        else{
-            //killing the scheduler and its parent to prevent multiple execution of this function upon catching ctrl+C
-            if(kill(queue->scheduler_parent_pid,SIGTERM) == -1){
-                write(1,"Kill Failed!\n",13);
-                _exit(1);
-            }
-            if(kill(queue->scheduler_pid,SIGTERM) == -1){
-                write(1,"Kill Failed!\n",13);
-                _exit(1);
-            }
 
-            //write is a async safe function
-            int i=0;
-            if(write(1,"\n",1) == -1){
-                _exit(1);
-            }
-            while(strncmp(queue->exit_Sequence[i],"\0", strlen(queue->exit_Sequence[i]))){
-                int len = strlen(queue->exit_Sequence[i]);
-                for (int j = 0; j < len; j++) {
-                    if(write(1, &queue->exit_Sequence[i][j], 1) == -1){
-                        _exit(1);
-                    }
-                }
-                i++;
-            }
-
+        if(queue->d_proc!=0){
             if(write(1,"-------------------------------------------------------------------------------------------------------\n\n\nSTATISTICS ON THE EFFECT OF PRIORITY ON OUR PROCESSES:\n\n\n",163) == -1){
                 _exit(1);
             }
@@ -168,31 +145,40 @@ void Escape_sequence(int signum){
             if(write(1,"\n\n",2) == -1){
                 _exit(1);
             }
-
-            // for(int i = 0; i < queue->d_proc; i++){
-            //     free(&queue->list_del[i]);
-            // }
-
-            if(munmap(queue,sizeof(Proc_Queue)) == -1){
-                write(1,"Munmap Failed!\n",15);
-                _exit(1);
-            }
-            if(close(fd_shm) == -1){
-                // write(1, "Close Failed!\n",14);
-                // _exit(1);
-            }
-            if(shm_unlink(text) == -1){
-                write(1,"Shm_Unlink Failed!\n",19);
-                _exit(1);
-            }
-
-            _exit(0);
         }
+
+        // for(int i = 0; i < queue->d_proc; i++){
+        //     free(&queue->list_del[i]);
+        // }
+
+        if(kill(queue->shell_pid,SIGQUIT) == -1){
+            write(1,"Kill Failed!\n",13);
+            _exit(1);
+        }
+
+        if(munmap(queue,sizeof(Proc_Queue)) == -1){
+            write(1,"Munmap Failed!\n",15);
+            _exit(1);
+        }
+        if(close(fd_shm) == -1){
+            write(1, "Close Failed!\n",14);
+            _exit(1);
+        }
+        if(shm_unlink(text) == -1){
+            write(1,"Shm_Unlink Failed!\n",19);
+            _exit(1);
+        }
+
+        _exit(0);
     }
 
     if(signum == SIGCHLD){
         int* n = 0;
         waitpid(-1,n,WNOHANG);
+    }
+
+    if(signum == SIGQUIT){
+        _exit(0);
     }
 }
 
@@ -673,6 +659,7 @@ void Simple_Scheduler(int NCPU, int TSLICE){
     struct timespec temp;
     long long diff_ns;
     double diff_ms;
+
     //main execution loop of the scheduler
     while(1){
         // Wait for a lock to access the process queue
@@ -683,14 +670,25 @@ void Simple_Scheduler(int NCPU, int TSLICE){
 
         // Check if there are processes in the queue
         if(queue->n_proc == 0){
+            if(signal(SIGINT,Escape_sequence) == SIG_ERR){
+                perror("SIGINT Handler");
+                exit(1);
+            }
+
             // If no processes, release the lock and sleep briefly
             if(sem_post(&queue->lock) == -1){
                 perror("Sem_Post");
                 exit(1);
             }
             if(usleep(TSLICE*1000) == -1){
-                // perror("Usleep");
-                // exit(1);
+                perror("Usleep");
+                exit(1);
+            }
+        }
+        else{
+            if(signal(SIGINT,SIG_IGN) == SIG_ERR){
+                perror("SIGINT");
+                exit(1);
             }
         }
         // Increment the primary index for scheduling
@@ -839,8 +837,8 @@ void Simple_Scheduler(int NCPU, int TSLICE){
         }
 
         if(usleep(TSLICE*1000) == -1){
-            // perror("Usleep");
-            // exit(1);
+            perror("Usleep");
+            exit(1);
         }
 
         if(sem_wait(&queue->lock) == -1){
@@ -878,8 +876,7 @@ void Simple_Scheduler(int NCPU, int TSLICE){
             for(int j = 0; j < temp_arr[i]; j++){
                 if(queue->list_procs[i][j].killed == 0 && queue->list_procs[i][j].running == 1){
                     if(kill(queue->list_procs[i][j].pid,SIGSTOP) == -1){
-                        perror("kill");
-                        exit(1);
+                        continue;
                     }
                     
                     //calculating the execution time,updating the last time and changing the runnning flag to zero before the process gets kicked out of the cpu
@@ -910,9 +907,11 @@ void Simple_Scheduler(int NCPU, int TSLICE){
 
     if(munmap(queue,sizeof(Proc_Queue)) == -1){
         perror("Munmap");
+        exit(1);
     }
     if(close(fd_shm) == -1){
         perror("Close");
+        exit(1);
     }
 
     exit(0);
@@ -932,6 +931,11 @@ void Simple_Shell(int NCPU, int TSLICE){
     }
 
     if(signal(SIGCHLD,Escape_sequence) == SIG_ERR){
+        perror("ERROR");
+        exit(1);
+    }
+
+    if(signal(SIGQUIT,Escape_sequence) == SIG_ERR){
         perror("ERROR");
         exit(1);
     }
@@ -973,6 +977,8 @@ void Simple_Shell(int NCPU, int TSLICE){
     queue->e_proc = 0;
     queue->sig_int_flag = 0;
 
+    queue->shell_pid = getpid();
+
     if(sem_init(&queue->lock,1,1) == -1){
         perror("Sem_Init");
         exit(1);
@@ -993,7 +999,17 @@ void Simple_Shell(int NCPU, int TSLICE){
             //getting the schedulers parent pid
             queue->scheduler_parent_pid = getpid();
 
-            wait(NULL);
+            if(signal(SIGINT,SIG_IGN) == SIG_ERR){
+                perror("ERROR");
+                exit(1);
+            }
+
+            int rand2;
+            int randpid = wait(&rand2);
+            if(!WEXITSTATUS(rand2)){
+                printf("Abnormal Termination of %d\n",randpid);
+                exit(1);
+            }
 
             if(munmap(queue,sizeof(Proc_Queue)) == -1){
                 perror("Munmap");
@@ -1011,9 +1027,15 @@ void Simple_Shell(int NCPU, int TSLICE){
         }
     }
 
+    if(signal(SIGINT,SIG_IGN) == SIG_ERR){
+        perror("SIGINT");
+        exit(1);
+    }
+
     //main shell loop
     do{
         // Get the current working directory
+
         char cwd[PATH_MAX];
         if(getcwd(cwd,sizeof(cwd)) == NULL){
             perror("ERROR");
@@ -1214,7 +1236,18 @@ void Simple_Shell(int NCPU, int TSLICE){
                                 continue;
                             }
                             else if(status3 > 0){
-                                int pid = wait(NULL);
+                                if(signal(SIGINT,SIG_IGN) == SIG_ERR){
+                                    perror("ERROR");
+                                    exit(1);
+                                }
+
+                                int rand;
+                                int pid = wait(&rand);
+                                if(!WIFEXITED(rand)){
+                                    printf("Abnormal Termination of %d\n",pid);
+                                    exit(1);
+                                }
+
                                 if(sem_wait(&queue->lock) == -1){
                                     perror("Sem_Wait");
                                     exit(1);
@@ -1298,9 +1331,11 @@ void Simple_Shell(int NCPU, int TSLICE){
                                 }
                                 if(munmap(queue,sizeof(Proc_Queue)) == -1){
                                     perror("Munmap");
+                                    exit(1);
                                 }
                                 if(close(fd_shm) == -1){
-                                    // perror("Close");
+                                    perror("Close");
+                                    exit(1);
                                 }
 
                                 if(kill(getpid(),SIGTERM) == -1){
@@ -1323,9 +1358,11 @@ void Simple_Shell(int NCPU, int TSLICE){
 
                                 if(munmap(queue,sizeof(Proc_Queue)) == -1){
                                     perror("Munmap");
+                                    exit(1);
                                 }
                                 if(close(fd_shm) == -1){
-                                    // perror("Close");
+                                    perror("Close");
+                                    exit(1);
                                 }
 
                                 execvp(arr_args[0],temp_arr);
