@@ -8,21 +8,22 @@ void* address;
 int page_size;
 Elf32_Phdr Req_Prog_Header;
 int count = 0;
-void* virtual_mem;
 int curr_page_size;
 
 void Escape_sequence(int signum, siginfo_t *info){
     if(signum == SIGSEGV){
+      lseek(fd,0,SEEK_SET);
       printf("%p\n",info->si_addr);
-      count++;
-      if(count == 5){
-        exit(0);
-      }
-      printf("cat\n");
-      munmap(virtual_mem,curr_page_size);
-      printf("cat\n");
+      // count++;
+      // if(count == 5){
+      //   exit(0);
+      // }
+      // if(munmap(virtual_mem,curr_page_size) == -1){
+      //   printf("aunt dead\n");
+      // }
       for(int i = 0; i < ehdr->e_phnum; i++){
-        if((void*)phdr[i].p_vaddr <= info->si_addr && (void*)phdr[i].p_vaddr + phdr[i].p_memsz >= info->si_addr){
+        if(phdr[i].p_type == PT_LOAD && (void*)phdr[i].p_vaddr <= info->si_addr && (void*)phdr[i].p_vaddr + phdr[i].p_memsz >= info->si_addr){
+          // printf("%p\n",phdr[i].p_vaddr);
             Req_Prog_Header = phdr[i];
             index2 = i;
             break; // break when we know that entrypoint lies in this segment
@@ -34,9 +35,16 @@ void Escape_sequence(int signum, siginfo_t *info){
       while(curr_page_size < phdr[index2].p_memsz){
         curr_page_size += page_size;
       }
+
+      //void* virtual_mem =  mmap((void*)phdr[index2].p_vaddr, curr_page_size, PROT_EXEC | PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_FIXED, fd, phdr[index2].p_offset);
+      void* virtual_mem =  mmap((void*)phdr[index2].p_vaddr,curr_page_size,PROT_EXEC | PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_SHARED,-1,0);
+      lseek(fd,phdr[index2].p_offset,SEEK_SET);
+      read(fd, virtual_mem,phdr[index2].p_memsz);
       
-      virtual_mem =  mmap((void*)phdr[index2].p_vaddr, curr_page_size, PROT_EXEC | PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_FIXED, fd, phdr[index2].p_offset);
-      // munmap(virtual_mem,curr_page_size);
+      if(virtual_mem == NULL){
+        printf("aunt\n");
+      }
+      // printf("%d %d %p\n",curr_page_size, phdr[index2].p_offset, (void*)phdr[index2].p_vaddr);
     }
 }
 
@@ -108,8 +116,9 @@ void load_and_run_elf(char** exe) {
   // 3. Allocate memory of the size "p_memsz" using mmap function 
   //    and then copy the segment content
 
-  // void* virtual_mem =  mmap((void*)phdr[index2].p_vaddr,page_size,PROT_EXEC | PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_FIXED,fd,phdr[index2].p_offset);
-
+  // void* virtual_mem =  mmap((void*)phdr[index2].p_vaddr,page_size,PROT_EXEC | PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_SHARED,-1,0);
+  // lseek(fd,phdr[index2].p_offset,SEEK_SET);
+  // read(fd, virtual_mem,phdr[index2].p_memsz);
   // 4. Navigate to the entrypoint address into the segment loaded in the memory in above step
 
   // void* address =  virtual_mem + (ehdr->e_entry - phdr[index2].p_vaddr);
@@ -122,7 +131,7 @@ void load_and_run_elf(char** exe) {
   // // 6. Call the "_start" method and print the value returned from the "_start"
 
   int result = _start();
-  printf("User _start return value = %d\n",result);
+  printf("\n\n\nUser _start return value = %d\n",result);
 
   // if(munmap(virtual_mem,Req_Prog_Header.p_memsz) == -1){
   //   perror("ERROR");
