@@ -9,11 +9,11 @@ int page_size;
 Elf32_Phdr Req_Prog_Header;
 int count = 0;
 int curr_page_size;
+int flag = 0;
 
 void Escape_sequence(int signum, siginfo_t *info){
     if(signum == SIGSEGV){
       lseek(fd,0,SEEK_SET);
-      printf("%p\n",info->si_addr);
       // count++;
       // if(count == 5){
       //   exit(0);
@@ -30,21 +30,38 @@ void Escape_sequence(int signum, siginfo_t *info){
         }
       }
 
-      curr_page_size = 0;
-
-      while(curr_page_size < phdr[index2].p_memsz){
-        curr_page_size += page_size;
+      int offset;
+      if(flag == 0){
+        flag = 1;
+        offset = 0;
+      }
+      else{
+        offset = info->si_addr - (void*)phdr[index2].p_vaddr;
       }
 
       //void* virtual_mem =  mmap((void*)phdr[index2].p_vaddr, curr_page_size, PROT_EXEC | PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_FIXED, fd, phdr[index2].p_offset);
-      void* virtual_mem =  mmap((void*)phdr[index2].p_vaddr,curr_page_size,PROT_EXEC | PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_SHARED,-1,0);
-      lseek(fd,phdr[index2].p_offset,SEEK_SET);
-      read(fd, virtual_mem,phdr[index2].p_memsz);
+      void* virtual_mem =  mmap((void*)phdr[index2].p_vaddr + offset,page_size,PROT_EXEC | PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_SHARED,-1,0);
+      
+      printf("%p %p\n",info->si_addr,(void*)phdr[index2].p_vaddr + offset);
+      
+      lseek(fd,phdr[index2].p_offset + offset,SEEK_SET);
+
+      int n_bytes_read;
+      if(phdr[index2].p_memsz - offset < page_size){
+        n_bytes_read = phdr[index2].p_memsz - offset;
+      }
+      else{
+        n_bytes_read = page_size;
+      }
+      read(fd, virtual_mem,n_bytes_read);
       
       if(virtual_mem == NULL){
         printf("aunt\n");
       }
-      // printf("%d %d %p\n",curr_page_size, phdr[index2].p_offset, (void*)phdr[index2].p_vaddr);
+
+      if(offset + page_size >= phdr[index2].p_memsz){
+        flag = 0;
+      }
     }
 }
 
