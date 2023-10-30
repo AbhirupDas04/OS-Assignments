@@ -42,8 +42,7 @@ int main(int argc, char** argv)
     exit(1);
   };
 
-  free(ehdr); 
-
+  free(ehdr);
   // 2. passing it to the loader for carrying out the loading/execution
   load_and_run_elf(&argv[1]);
   // 3. invoke the cleanup routine inside the loader  

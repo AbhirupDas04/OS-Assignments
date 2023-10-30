@@ -3,6 +3,42 @@
 Elf32_Ehdr *ehdr;
 Elf32_Phdr *phdr;
 int fd;
+int index2;
+void* address;
+int page_size;
+Elf32_Phdr Req_Prog_Header;
+int count = 0;
+void* virtual_mem;
+int curr_page_size;
+
+void Escape_sequence(int signum, siginfo_t *info){
+    if(signum == SIGSEGV){
+      printf("%p\n",info->si_addr);
+      count++;
+      if(count == 5){
+        exit(0);
+      }
+      printf("cat\n");
+      munmap(virtual_mem,curr_page_size);
+      printf("cat\n");
+      for(int i = 0; i < ehdr->e_phnum; i++){
+        if((void*)phdr[i].p_vaddr <= info->si_addr && (void*)phdr[i].p_vaddr + phdr[i].p_memsz >= info->si_addr){
+            Req_Prog_Header = phdr[i];
+            index2 = i;
+            break; // break when we know that entrypoint lies in this segment
+        }
+      }
+
+      curr_page_size = 0;
+
+      while(curr_page_size < phdr[index2].p_memsz){
+        curr_page_size += page_size;
+      }
+      
+      virtual_mem =  mmap((void*)phdr[index2].p_vaddr, curr_page_size, PROT_EXEC | PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_FIXED, fd, phdr[index2].p_offset);
+      // munmap(virtual_mem,curr_page_size);
+    }
+}
 
 /*
  * release memory and other cleanups
@@ -26,6 +62,14 @@ void load_and_run_elf(char** exe) {
     exit(1);
   };
 
+  struct sigaction sig_struct;
+  memset(&sig_struct, 0, sizeof(sig_struct));
+  sig_struct.sa_handler = (void (*)(int))Escape_sequence;
+  sig_struct.sa_flags = SA_SIGINFO;
+  sigaction(SIGSEGV, &sig_struct, NULL);
+
+  page_size = getpagesize();
+
   // 1. Load entire binary content into the memory from the ELF file.
 
   ehdr = (Elf32_Ehdr*)malloc(sizeof(Elf32_Ehdr)); // For allocating memory for ELF Header
@@ -45,58 +89,43 @@ void load_and_run_elf(char** exe) {
   // 2. Iterate through the PHDR table and find the section of PT_LOAD 
   //    type that contains the address of the entrypoint method in fib.c
 
-  Elf32_Phdr Req_Prog_Header;
-  int index;
-  int flag = 0;
+  // int flag = 0;
 
-  for(int i = 0; i < ehdr->e_phnum; i++){
-    if(phdr[i].p_type == PT_LOAD && phdr[i].p_vaddr < ehdr->e_entry && phdr[i].p_vaddr + phdr[i].p_memsz > ehdr->e_entry){
-        Req_Prog_Header = phdr[i];
-        index = i;
-        flag = 1;
-        break; // break when we know that the segment is of type PT_LOAD and when we know that entrypoint lies in this segment
-    }
-  }
+  // for(int i = 0; i < ehdr->e_phnum; i++){
+  //   if(phdr[i].p_type == PT_LOAD && phdr[i].p_vaddr < ehdr->e_entry && phdr[i].p_vaddr + phdr[i].p_memsz > ehdr->e_entry){
+  //       Req_Prog_Header = phdr[i];
+  //       index2 = i;
+  //       flag = 1;
+  //       break; // break when we know that the segment is of type PT_LOAD and when we know that entrypoint lies in this segment
+  //   }
+  // }
 
-  if(flag == 0){
-    printf("PT_LOAD Not Found.\n");
-    exit(1);
-  }
+  // if(flag == 0){
+  //   printf("PT_LOAD Not Found.\n");
+  //   exit(1);
+  // }
 
   // 3. Allocate memory of the size "p_memsz" using mmap function 
   //    and then copy the segment content
 
-  void* virtual_mem = mmap(NULL, Req_Prog_Header.p_memsz, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_ANONYMOUS | MAP_PRIVATE, 0,0);
-  if(virtual_mem == (void*)(-1)){
-    printf("MMAP ERROR\n");
-    exit(1);
-  }
-
-  if(lseek(fd,phdr[index].p_offset,SEEK_SET) == -1){
-    perror("ERROR");
-    exit(1);
-  };
-
-  if(read(fd, virtual_mem,phdr[index].p_memsz) == -1){
-    perror("ERROR");
-    exit(1);
-  };
+  // void* virtual_mem =  mmap((void*)phdr[index2].p_vaddr,page_size,PROT_EXEC | PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_FIXED,fd,phdr[index2].p_offset);
 
   // 4. Navigate to the entrypoint address into the segment loaded in the memory in above step
 
-  void* address =  virtual_mem + (ehdr->e_entry - phdr[index].p_vaddr);
+  // void* address =  virtual_mem + (ehdr->e_entry - phdr[index2].p_vaddr);
+  void* address =  (void*)ehdr->e_entry;
 
   // 5. Typecast the address to that of function pointer matching "_start" method in fib.c.
 
   int (*_start)() = (int(*)())(address);
 
-  // 6. Call the "_start" method and print the value returned from the "_start"
+  // // 6. Call the "_start" method and print the value returned from the "_start"
 
   int result = _start();
   printf("User _start return value = %d\n",result);
 
-  if(munmap(virtual_mem,Req_Prog_Header.p_memsz) == -1){
-    perror("ERROR");
-    exit(1);
-  };
+  // if(munmap(virtual_mem,Req_Prog_Header.p_memsz) == -1){
+  //   perror("ERROR");
+  //   exit(1);
+  // };
 }
