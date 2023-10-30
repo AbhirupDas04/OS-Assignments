@@ -14,10 +14,7 @@ int flag = 0;
 void Escape_sequence(int signum, siginfo_t *info){
     if(signum == SIGSEGV){
       lseek(fd,0,SEEK_SET);
-      // count++;
-      // if(count == 5){
-      //   exit(0);
-      // }
+    //   printf("%p\n",info->si_addr);
       // if(munmap(virtual_mem,curr_page_size) == -1){
       //   printf("aunt dead\n");
       // }
@@ -42,8 +39,6 @@ void Escape_sequence(int signum, siginfo_t *info){
       //void* virtual_mem =  mmap((void*)phdr[index2].p_vaddr, curr_page_size, PROT_EXEC | PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_FIXED, fd, phdr[index2].p_offset);
       void* virtual_mem =  mmap((void*)phdr[index2].p_vaddr + offset,page_size,PROT_EXEC | PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_SHARED,-1,0);
       
-      printf("%p %p\n",info->si_addr,(void*)phdr[index2].p_vaddr + offset);
-      
       lseek(fd,phdr[index2].p_offset + offset,SEEK_SET);
 
       int n_bytes_read;
@@ -53,14 +48,11 @@ void Escape_sequence(int signum, siginfo_t *info){
       else{
         n_bytes_read = page_size;
       }
+    //   printf("%d\n",n_bytes_read);
       read(fd, virtual_mem,n_bytes_read);
       
       if(virtual_mem == NULL){
         printf("aunt\n");
-      }
-
-      if(offset + page_size >= phdr[index2].p_memsz){
-        flag = 0;
       }
     }
 }
