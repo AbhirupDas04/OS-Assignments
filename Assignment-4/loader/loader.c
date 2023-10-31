@@ -9,7 +9,6 @@ int page_size;
 Elf32_Phdr Req_Prog_Header;
 int count = 0;
 int curr_page_size;
-int flag = 0;
 
 void Escape_sequence(int signum, siginfo_t *info){
     if(signum == SIGSEGV){
@@ -27,14 +26,9 @@ void Escape_sequence(int signum, siginfo_t *info){
         }
       }
 
-      int offset;
-      if(flag == 0){
-        flag = 1;
-        offset = 0;
-      }
-      else{
-        offset = info->si_addr - (void*)phdr[index2].p_vaddr;
-      }
+      void* start_page = info->si_addr - (int)info->si_addr % page_size;
+
+      int offset = start_page - (void*)phdr[index2].p_vaddr;
 
       //void* virtual_mem =  mmap((void*)phdr[index2].p_vaddr, curr_page_size, PROT_EXEC | PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_FIXED, fd, phdr[index2].p_offset);
       void* virtual_mem =  mmap((void*)phdr[index2].p_vaddr + offset,page_size,PROT_EXEC | PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_SHARED,-1,0);
@@ -48,7 +42,7 @@ void Escape_sequence(int signum, siginfo_t *info){
       else{
         n_bytes_read = page_size;
       }
-    //   printf("%d\n",n_bytes_read);
+    //   printf("%d %d\n",n_bytes_read , phdr[index2].p_memsz);
       read(fd, virtual_mem,n_bytes_read);
       
       if(virtual_mem == NULL){
