@@ -41,7 +41,12 @@ void Escape_sequence(int signum, siginfo_t *info){
         void* start_page = info->si_addr - (int)info->si_addr % page_size; // Attaining the starting address of the page that contains the segfault.
         int offset = start_page - (void*)phdr[index2].p_vaddr; // Finding the difference between the page and the starting of the segment that contains the page
 
-        virtual_mem =  mmap((void*)phdr[index2].p_vaddr + offset,page_size, PROT_EXEC | PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_SHARED, -1, 0); // fd = -1 because MAP_ANONYMOUS is present
+        int curr_page_size = 0;
+        while(curr_page_size < phdr[index2].p_memsz){
+            curr_page_size += page_size;
+        }
+
+        virtual_mem =  mmap((void*)phdr[index2].p_vaddr,curr_page_size, PROT_EXEC | PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_SHARED, -1, 0); // fd = -1 because MAP_ANONYMOUS is present
         if(virtual_mem == (void*)-1){
             if(write(1,"MMAP Failed!\n",13)){
                 exit(EXIT_FAILURE);
@@ -49,23 +54,17 @@ void Escape_sequence(int signum, siginfo_t *info){
             exit(EXIT_FAILURE);
         }
 
-        addr_array[addr_idx++] = (int)((void*)phdr[index2].p_vaddr + offset); // Writing the address where I am mmap'ing to an array so that i can munmap the memory later on.
-        n_page_allocs ++;
+        addr_array[addr_idx++] = (int)((void*)phdr[index2].p_vaddr); // Writing the address where I am mmap'ing to an array so that i can munmap the memory later on.
+        n_page_allocs += (curr_page_size / page_size);
 
-        if(lseek(fd,phdr[index2].p_offset + offset,SEEK_SET) == -1){ // Moving the cursor of the file to the beginning of the page carrying the segfault.
+        if(lseek(fd,phdr[index2].p_offset,SEEK_SET) == -1){ // Moving the cursor of the file to the beginning of the page carrying the segfault.
             if(write(1,"Lseek Failed!\n",14)){
                 exit(EXIT_FAILURE);
             }
             exit(EXIT_FAILURE);
         }
 
-        int n_bytes_read;
-        if(phdr[index2].p_memsz - offset < page_size){
-            n_bytes_read = phdr[index2].p_memsz - offset; // The number of bytes of memory to be loaded into the segment is determined by this.
-        }
-        else{
-            n_bytes_read = page_size; // No.of bytes to be read is the page itself as further pages are needed for this segment.
-        }
+        int n_bytes_read = phdr[index2].p_memsz;
 
         if(read(fd, virtual_mem,n_bytes_read) == -1){ // Reading the page from the file to the location where we are mmapping a page.
             if(write(1,"Read Failed!\n",13)){
@@ -74,7 +73,7 @@ void Escape_sequence(int signum, siginfo_t *info){
             exit(EXIT_FAILURE);
         }
 
-        total_frag += (page_size - n_bytes_read); // Calculating the total internal fragmentation for this page.
+        total_frag += (curr_page_size - n_bytes_read); // Calculating the total internal fragmentation for this page.
     }
 }
 
