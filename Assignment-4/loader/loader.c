@@ -21,13 +21,6 @@ void Escape_sequence(int signum, siginfo_t *info){
 
         n_page_faults++;
 
-        if(lseek(fd, 0, SEEK_SET) == -1){ // Ensuring the file's cursor is set to starting of the file.
-            if(write(1,"Lseek Failed!\n",14)){
-                exit(EXIT_FAILURE);
-            }
-            exit(EXIT_FAILURE);
-        }
-
         int flag = 0;
         for(int i = 0; i < ehdr->e_phnum; i++){
             if((void*)phdr[i].p_vaddr <= info->si_addr && (void*)phdr[i].p_vaddr + phdr[i].p_memsz >= info->si_addr){ // Checking if the segfault lies in this segment.
