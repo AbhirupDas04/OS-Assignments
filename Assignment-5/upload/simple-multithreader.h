@@ -45,4 +45,17 @@ int main(int argc, char **argv) {
 
 #define main user_main
 
+// parallel_for accepts a C++11 lambda function and runs the loop body (lambda) in  
+// parallel by using ‘numThreads’ number of Pthreads to be created by the simple-multithreader 
+void parallel_for(int low, int high, std::function<void(int)> &&lambda, int numThreads){
+
+}
+
+// This version of parallel_for is for parallelizing two-dimensional for-loops, i.e., an outter for-i loop and  
+// an inner for-j loop. Loop properties, i.e. low, high are mentioned below for both outter  
+// and inner for-loops. The suffixes “1” and “2” represents outter and inner loop properties respectively.  
+void parallel_for(int low1, int high1,  int low2, int high2, std::function<void(int, int)>  &&lambda, int numThreads){
+    
+}
+
 
