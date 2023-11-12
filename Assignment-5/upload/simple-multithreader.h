@@ -103,7 +103,7 @@ void parallel_for(int low, int high, std::function<void(int)> &&lambda, int numT
             loop_iter = chunk_size;
         }
 
-        Lambda_Converter* l1 = (Lambda_Converter*)malloc(sizeof(Lambda_Converter));
+        Lambda_Converter* l1 = new Lambda_Converter;
         l1->low1 = start_idx;
         l1->loop_iter1 = loop_iter;
         l1->fn1 = lambda;
@@ -147,7 +147,7 @@ void parallel_for(int low1, int high1,  int low2, int high2, std::function<void(
             loop_iter = chunk_size;
         }
 
-        Lambda_Converter* l1 = (Lambda_Converter*)malloc(sizeof(Lambda_Converter));
+        Lambda_Converter* l1 = new Lambda_Converter;
         l1->low1 = start_idx;
         l1->loop_iter1 = loop_iter;
         l1->low2 = low2;

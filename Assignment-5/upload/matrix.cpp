@@ -41,9 +41,13 @@ int main(int argc, char** argv) {
 
     // cleanup memory
     parallel_for(0, size, [=](int i) {
+        // printf("a\n");
         delete [] A[i];
+        // printf("b\n");
         delete [] B[i];
+        // printf("c\n");
         delete [] C[i];
+        // printf("d\n");
     }, numThread);
 
     delete[] A;
