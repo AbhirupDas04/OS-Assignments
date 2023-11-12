@@ -6,9 +6,12 @@
 #include <pthread.h>
 
 typedef struct{
-    int low;
-    int loop_iter;
-    std::function<void(int)> fn;
+    int loop_iter1;
+    int low1;
+    int low2;
+    int high2;
+    std::function<void(int)> fn1;
+    std::function<void(int,int)> fn2;
 }Lambda_Converter;
 
 int user_main(int argc, char **argv);
@@ -54,9 +57,20 @@ int main(int argc, char **argv) {
 
 void* fn_converter_1(void* converter) {
     Lambda_Converter* Main_Converter = (Lambda_Converter*)converter;
-    std::function<void(int)> lambda = Main_Converter->fn;
-    for(int j = Main_Converter->low; j < Main_Converter->low + Main_Converter->loop_iter; j++){
+    std::function<void(int)> lambda = Main_Converter->fn1;
+    for(int j = Main_Converter->low1; j < Main_Converter->low1 + Main_Converter->loop_iter1; j++){
         lambda(j);
+    }
+    return NULL;
+}
+
+void* fn_converter_2(void* converter) {
+    Lambda_Converter* Main_Converter = (Lambda_Converter*)converter;
+    std::function<void(int,int)> lambda = Main_Converter->fn2;
+    for(int j = Main_Converter->low1; j < Main_Converter->low1 + Main_Converter->loop_iter1; j++){
+        for(int l = Main_Converter->low2; l < Main_Converter->high2; l++){
+            lambda(j,l);
+        }
     }
     return NULL;
 }
@@ -77,7 +91,7 @@ void parallel_for(int low, int high, std::function<void(int)> &&lambda, int numT
         n_excess = size % numThreads;
     }
 
-    int start_idx = 0;
+    int start_idx = low;
     pthread_t thread_id_arr[numThreads];
     int loop_iter;
     for (int i=1; i <= numThreads; i++) {
@@ -90,9 +104,9 @@ void parallel_for(int low, int high, std::function<void(int)> &&lambda, int numT
         }
 
         Lambda_Converter* l1 = (Lambda_Converter*)malloc(sizeof(Lambda_Converter));
-        l1->low = start_idx;
-        l1->loop_iter = loop_iter;
-        l1->fn = lambda;
+        l1->low1 = start_idx;
+        l1->loop_iter1 = loop_iter;
+        l1->fn1 = lambda;
 
         pthread_create(&thread_id_arr[i-1], NULL, fn_converter_1, (void*)l1);
 
@@ -108,7 +122,46 @@ void parallel_for(int low, int high, std::function<void(int)> &&lambda, int numT
 // an inner for-j loop. Loop properties, i.e. low, high are mentioned below for both outter  
 // and inner for-loops. The suffixes “1” and “2” represents outter and inner loop properties respectively.  
 void parallel_for(int low1, int high1,  int low2, int high2, std::function<void(int, int)>  &&lambda, int numThreads){
+    int size = high1 - low1;
+    numThreads = numThreads - 1;
 
+    int chunk_size;
+    int n_excess;
+    if(size % numThreads == 0){
+        chunk_size = size / numThreads;
+    }
+    else{
+        chunk_size = size / numThreads;
+        n_excess = size % numThreads;
+    }
+
+    int start_idx = low1;
+    pthread_t thread_id_arr[numThreads];
+    int loop_iter;
+    for (int i=1; i <= numThreads; i++) {
+        if(n_excess > 0){
+            loop_iter = chunk_size + 1;
+            n_excess--;
+        }
+        else{
+            loop_iter = chunk_size;
+        }
+
+        Lambda_Converter* l1 = (Lambda_Converter*)malloc(sizeof(Lambda_Converter));
+        l1->low1 = start_idx;
+        l1->loop_iter1 = loop_iter;
+        l1->low2 = low2;
+        l1->high2 = high2;
+        l1->fn2 = lambda;
+
+        pthread_create(&thread_id_arr[i-1], NULL, fn_converter_2, (void*)l1);
+
+        start_idx += loop_iter;
+    }
+
+    for (int i=1; i <= numThreads; i++) {
+        pthread_join(thread_id_arr[i-1] , NULL);
+    }
 }
 
 
