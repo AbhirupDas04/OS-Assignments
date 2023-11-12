@@ -77,6 +77,7 @@ void parallel_for(int low, int high, std::function<void(int)> &&lambda, int numT
         n_excess = size % numThreads;
     }
 
+    int start_idx = 0;
     pthread_t thread_id_arr[numThreads];
     int loop_iter;
     for (int i=1; i <= numThreads; i++) {
@@ -89,10 +90,13 @@ void parallel_for(int low, int high, std::function<void(int)> &&lambda, int numT
         }
 
         Lambda_Converter* l1 = (Lambda_Converter*)malloc(sizeof(Lambda_Converter));
-        l1->low = low;
+        l1->low = start_idx;
         l1->loop_iter = loop_iter;
         l1->fn = lambda;
+
         pthread_create(&thread_id_arr[i-1], NULL, fn_converter_1, (void*)l1);
+
+        start_idx += loop_iter;
     }
 
     for (int i=1; i <= numThreads; i++) {
