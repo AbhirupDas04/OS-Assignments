@@ -133,7 +133,10 @@ void* fn_converter_2(void* converter) {
 // parallel by using ‘numThreads’ number of Pthreads to be created by the simple-multithreader 
 void parallel_for(int low, int high, std::function<void(int)> &&lambda, int numThreads){
     struct timespec start, end;
-    clock_gettime(CLOCK_REALTIME, &start); // Measuring Starting Time
+    if(clock_gettime(CLOCK_REALTIME, &start) == -1){ // Measuring Starting Time
+        perror("Clock_gettime");
+        exit(EXIT_FAILURE);
+    }
 
     struct timespec sleep_time;
     sleep_time.tv_sec = 4;
@@ -171,18 +174,27 @@ void parallel_for(int low, int high, std::function<void(int)> &&lambda, int numT
         l1->loop_iter1 = loop_iter;
         l1->fn1 = lambda;
 
-        pthread_create(&thread_id_arr[i-1], NULL, fn_converter_1, (void*)l1); // Creating the Threads.
+        if(pthread_create(&thread_id_arr[i-1], NULL, fn_converter_1, (void*)l1) != 0){  // Creating the Threads.
+            perror("Pthread_Create");
+            exit(EXIT_FAILURE);
+        }
 
         start_idx += loop_iter;
     }
 
     for (int i=1; i <= numThreads; i++) {
-        pthread_join(thread_id_arr[i-1] , NULL); // Waiting for the threads to finish Execution
+        if(pthread_join(thread_id_arr[i-1] , NULL) != 0){ // Waiting for the threads to finish Execution
+            perror("Pthread_Join");
+            exit(EXIT_FAILURE);
+        } 
     }
 
 
 
-    clock_gettime(CLOCK_REALTIME, &end); // Getting the end time.
+    if(clock_gettime(CLOCK_REALTIME, &end) == -1){ // Getting the end time.
+        perror("Clock_gettime");
+        exit(EXIT_FAILURE);
+    }
 
     long long diff_ns = (end.tv_sec - start.tv_sec) * 1000000000LL + (end.tv_nsec - start.tv_nsec);
     double diff_ms = (double)diff_ns / 1000000.0;
@@ -201,7 +213,10 @@ void parallel_for(int low, int high, std::function<void(int)> &&lambda, int numT
 // and inner for-loops. The suffixes “1” and “2” represents outter and inner loop properties respectively.  
 void parallel_for(int low1, int high1,  int low2, int high2, std::function<void(int, int)>  &&lambda, int numThreads){
     struct timespec start, end;
-    clock_gettime(CLOCK_REALTIME, &start); // Measuring Starting Time
+    if(clock_gettime(CLOCK_REALTIME, &start) == -1){ // Measuring Starting Time
+        perror("Clock_gettime");
+        exit(EXIT_FAILURE);
+    }
 
     struct timespec sleep_time;
     sleep_time.tv_sec = 4;
@@ -241,18 +256,27 @@ void parallel_for(int low1, int high1,  int low2, int high2, std::function<void(
         l1->high2 = high2;
         l1->fn2 = lambda;
 
-        pthread_create(&thread_id_arr[i-1], NULL, fn_converter_2, (void*)l1); // Creating the Threads.
+        if(pthread_create(&thread_id_arr[i-1], NULL, fn_converter_2, (void*)l1) != 0){ // Creating the Threads.
+            perror("Pthread_Create");
+            exit(EXIT_FAILURE);
+        }
 
         start_idx += loop_iter;
     }
 
     for (int i=1; i <= numThreads; i++) {
-        pthread_join(thread_id_arr[i-1] , NULL); // Waiting for the threads to finish Execution
+        if(pthread_join(thread_id_arr[i-1] , NULL) != 0){ // Waiting for the threads to finish Execution
+            perror("Pthread_Join");
+            exit(EXIT_FAILURE);
+        }
     }
 
 
 
-    clock_gettime(CLOCK_REALTIME, &end); // Getting the end time.
+    if(clock_gettime(CLOCK_REALTIME, &end) == -1){ // Getting the end time.
+        perror("Clock_gettime");
+        exit(EXIT_FAILURE);
+    }
 
     long long diff_ns = (end.tv_sec - start.tv_sec) * 1000000000LL + (end.tv_nsec - start.tv_nsec);
     double diff_ms = (double)diff_ns / 1000000.0;
