@@ -9,23 +9,25 @@
 
 // This Struct is to contain all the details regarding the lambda function and its parameters.
 typedef struct{ 
-    int loop_iter1; // This is to determine the outerloop no.of iterations.
-    int low1;
-    int low2;
-    int high2;
+    int loop_iter1; // This is to determine the outer loop's no.of iterations.
+    int low1; // Starting index of outer loop
+    int low2; // Starting index of inner loop
+    int high2; // Ending index of inner loop
     std::function<void(int)> fn1;
     std::function<void(int,int)> fn2;
 }Lambda_Converter;
 
+// This Struct stores all the data with regards to the information about the time needed for the 'parallel_for'
+// function.
 typedef struct{
-    struct timespec start;
-    struct timespec end;
-    double diff_ms;
-    int type;
+    struct timespec start; // Starting time
+    struct timespec end; // Ending time
+    double diff_ms; // Total Time taken in ms
+    int type; // This is 1 if lambda fn of 1 parameter is used and 2 if 2 parameters
     int numThreads;
 }Time_Controller;
 
-Time_Controller timestruct_arr[20];
+Time_Controller timestruct_arr[20]; // Array for storage of no. of 'parallel_for' calls
 int curr_tstruct_idx = -1;
 
 int user_main(int argc, char **argv);
@@ -89,7 +91,7 @@ int main(int argc, char **argv) {
 
             char start_time_str[30], end_time_str[30];
 
-            strftime(start_time_str, sizeof(start_time_str), "%H:%M:%S", localtime(&timestruct_arr[i].start.tv_sec));
+            strftime(start_time_str, sizeof(start_time_str), "%H:%M:%S", localtime(&timestruct_arr[i].start.tv_sec)); // Converting the Time to a readable version
             strftime(end_time_str, sizeof(end_time_str), "%H:%M:%S", localtime(&timestruct_arr[i].end.tv_sec));
             printf("\tStart time -> %s.%3ld\n", start_time_str, timestruct_arr[i].start.tv_nsec);
             printf("\tEnd time -> %s.%3ld\n", end_time_str, timestruct_arr[i].end.tv_nsec);
@@ -103,6 +105,8 @@ int main(int argc, char **argv) {
 
 #define main user_main
 
+// This function is used to convert the function needed to compute the lambda function of 1 variable to
+// that of a function that matches pthread_create's function pointer signature.
 void* fn_converter_1(void* converter) {
     Lambda_Converter* Main_Converter = (Lambda_Converter*)converter;
     std::function<void(int)> lambda = Main_Converter->fn1;
@@ -112,6 +116,8 @@ void* fn_converter_1(void* converter) {
     return NULL;
 }
 
+// This function is used to convert the function needed to compute the lambda function of 2 variables to
+// that of a function that matches pthread_create's function pointer signature.
 void* fn_converter_2(void* converter) {
     Lambda_Converter* Main_Converter = (Lambda_Converter*)converter;
     std::function<void(int,int)> lambda = Main_Converter->fn2;
@@ -127,7 +133,7 @@ void* fn_converter_2(void* converter) {
 // parallel by using ‘numThreads’ number of Pthreads to be created by the simple-multithreader 
 void parallel_for(int low, int high, std::function<void(int)> &&lambda, int numThreads){
     struct timespec start, end;
-    clock_gettime(CLOCK_REALTIME, &start);
+    clock_gettime(CLOCK_REALTIME, &start); // Measuring Starting Time
 
     struct timespec sleep_time;
     sleep_time.tv_sec = 4;
@@ -140,10 +146,10 @@ void parallel_for(int low, int high, std::function<void(int)> &&lambda, int numT
 
     int chunk_size;
     int n_excess;
-    if(size % numThreads == 0){
+    if(size % numThreads == 0){ // If this is 0, that means that we can divide chunks equally.
         chunk_size = size / numThreads;
     }
-    else{
+    else{ // Otherwise, we have to break chunks into slightly unequal pieces with some having 1 more iteration than the other.
         chunk_size = size / numThreads;
         n_excess = size % numThreads;
     }
@@ -153,35 +159,35 @@ void parallel_for(int low, int high, std::function<void(int)> &&lambda, int numT
     int loop_iter;
     for (int i=1; i <= numThreads; i++) {
         if(n_excess > 0){
-            loop_iter = chunk_size + 1;
+            loop_iter = chunk_size + 1; // Determining the number of times the lambda function will be called inside current chunk.
             n_excess--;
         }
         else{
             loop_iter = chunk_size;
         }
 
-        Lambda_Converter* l1 = new Lambda_Converter;
+        Lambda_Converter* l1 = new Lambda_Converter; // This stores all the data regarding the function.
         l1->low1 = start_idx;
         l1->loop_iter1 = loop_iter;
         l1->fn1 = lambda;
 
-        pthread_create(&thread_id_arr[i-1], NULL, fn_converter_1, (void*)l1);
+        pthread_create(&thread_id_arr[i-1], NULL, fn_converter_1, (void*)l1); // Creating the Threads.
 
         start_idx += loop_iter;
     }
 
     for (int i=1; i <= numThreads; i++) {
-        pthread_join(thread_id_arr[i-1] , NULL);
+        pthread_join(thread_id_arr[i-1] , NULL); // Waiting for the threads to finish Execution
     }
 
 
 
-    clock_gettime(CLOCK_REALTIME, &end);
+    clock_gettime(CLOCK_REALTIME, &end); // Getting the end time.
 
     long long diff_ns = (end.tv_sec - start.tv_sec) * 1000000000LL + (end.tv_nsec - start.tv_nsec);
     double diff_ms = (double)diff_ns / 1000000.0;
 
-    Time_Controller t1;
+    Time_Controller t1; // Storing data related to the timing of the fn call.
     t1.diff_ms = diff_ms;
     t1.end = end;
     t1.numThreads = numThreads;
@@ -195,7 +201,7 @@ void parallel_for(int low, int high, std::function<void(int)> &&lambda, int numT
 // and inner for-loops. The suffixes “1” and “2” represents outter and inner loop properties respectively.  
 void parallel_for(int low1, int high1,  int low2, int high2, std::function<void(int, int)>  &&lambda, int numThreads){
     struct timespec start, end;
-    clock_gettime(CLOCK_REALTIME, &start);
+    clock_gettime(CLOCK_REALTIME, &start); // Measuring Starting Time
 
     struct timespec sleep_time;
     sleep_time.tv_sec = 4;
@@ -208,10 +214,10 @@ void parallel_for(int low1, int high1,  int low2, int high2, std::function<void(
 
     int chunk_size;
     int n_excess;
-    if(size % numThreads == 0){
+    if(size % numThreads == 0){ // If this is 0, that means that we can divide chunks equally.
         chunk_size = size / numThreads;
     }
-    else{
+    else{ // Otherwise, we have to break chunks into slightly unequal pieces with some having 1 more iteration than the other.
         chunk_size = size / numThreads;
         n_excess = size % numThreads;
     }
@@ -221,37 +227,37 @@ void parallel_for(int low1, int high1,  int low2, int high2, std::function<void(
     int loop_iter;
     for (int i=1; i <= numThreads; i++) {
         if(n_excess > 0){
-            loop_iter = chunk_size + 1;
+            loop_iter = chunk_size + 1; // Determining the number of times the lambda function will be called inside current chunk.
             n_excess--;
         }
         else{
             loop_iter = chunk_size;
         }
 
-        Lambda_Converter* l1 = new Lambda_Converter;
+        Lambda_Converter* l1 = new Lambda_Converter; // This stores all the data regarding the function.
         l1->low1 = start_idx;
         l1->loop_iter1 = loop_iter;
         l1->low2 = low2;
         l1->high2 = high2;
         l1->fn2 = lambda;
 
-        pthread_create(&thread_id_arr[i-1], NULL, fn_converter_2, (void*)l1);
+        pthread_create(&thread_id_arr[i-1], NULL, fn_converter_2, (void*)l1); // Creating the Threads.
 
         start_idx += loop_iter;
     }
 
     for (int i=1; i <= numThreads; i++) {
-        pthread_join(thread_id_arr[i-1] , NULL);
+        pthread_join(thread_id_arr[i-1] , NULL); // Waiting for the threads to finish Execution
     }
 
 
 
-    clock_gettime(CLOCK_REALTIME, &end);
+    clock_gettime(CLOCK_REALTIME, &end); // Getting the end time.
 
     long long diff_ns = (end.tv_sec - start.tv_sec) * 1000000000LL + (end.tv_nsec - start.tv_nsec);
     double diff_ms = (double)diff_ns / 1000000.0;
 
-    Time_Controller t1;
+    Time_Controller t1; // Storing data related to the timing of the fn call.
     t1.diff_ms = diff_ms;
     t1.end = end;
     t1.numThreads = numThreads;
