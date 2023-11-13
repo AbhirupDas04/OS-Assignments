@@ -159,6 +159,7 @@ void parallel_for(int low, int high, std::function<void(int)> &&lambda, int numT
 
     int start_idx = low;
     pthread_t thread_id_arr[numThreads];
+    Lambda_Converter* converter_arr[numThreads]; // For Storing the converters, so that I can delete them later
     int loop_iter;
     for (int i=1; i <= numThreads; i++) {
         if(n_excess > 0){
@@ -173,6 +174,7 @@ void parallel_for(int low, int high, std::function<void(int)> &&lambda, int numT
         l1->low1 = start_idx;
         l1->loop_iter1 = loop_iter;
         l1->fn1 = lambda;
+        converter_arr[i-1] = l1;
 
         if(pthread_create(&thread_id_arr[i-1], NULL, fn_converter_1, (void*)l1) != 0){  // Creating the Threads.
             perror("Pthread_Create");
@@ -187,6 +189,7 @@ void parallel_for(int low, int high, std::function<void(int)> &&lambda, int numT
             perror("Pthread_Join");
             exit(EXIT_FAILURE);
         } 
+        delete converter_arr[i-1];
     }
 
 
@@ -239,6 +242,7 @@ void parallel_for(int low1, int high1,  int low2, int high2, std::function<void(
 
     int start_idx = low1;
     pthread_t thread_id_arr[numThreads];
+    Lambda_Converter* converter_arr[numThreads]; // For Storing the converters, so that I can delete them later
     int loop_iter;
     for (int i=1; i <= numThreads; i++) {
         if(n_excess > 0){
@@ -255,6 +259,7 @@ void parallel_for(int low1, int high1,  int low2, int high2, std::function<void(
         l1->low2 = low2;
         l1->high2 = high2;
         l1->fn2 = lambda;
+        converter_arr[i-1] = l1;
 
         if(pthread_create(&thread_id_arr[i-1], NULL, fn_converter_2, (void*)l1) != 0){ // Creating the Threads.
             perror("Pthread_Create");
@@ -269,6 +274,7 @@ void parallel_for(int low1, int high1,  int low2, int high2, std::function<void(
             perror("Pthread_Join");
             exit(EXIT_FAILURE);
         }
+        delete converter_arr[i-1];
     }
 
 
