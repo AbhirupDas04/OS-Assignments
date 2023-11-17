@@ -73,3 +73,10 @@ converts data from lambda to pthreads suitability
 ```
 ** No changes were made **
 ```
+
+## Assumptions
+```
+- We are printing the time for each parallel_for and not for each thread
+- We assume that (numthread -1) pthreads are to be created, since, total number of threads = main thread + no.of pthreads
+[in point 2(b), it mentions that "SimpleMultithreader  runtime  execution  must  have  the  exact  number  of  threads  specified  by  the programmer including the main thread of execution.]
+```
